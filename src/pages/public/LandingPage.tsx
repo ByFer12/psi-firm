@@ -11,7 +11,7 @@ export const LandingPage = () => {
 
   const handleScheduleClick = () => {
     if (isAuthenticated) {
-      if (user?.role === 'PATIENT') navigate('/dashboard/paciente/citas/nueva');
+      if (user?.role === 6) navigate('/dashboard/paciente/citas/nueva');
       else navigate('/dashboard/empleado');
     } else {
       navigate('/login');
@@ -76,7 +76,7 @@ export const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
                 <div className="bg-teal-100 rounded-2xl p-8 h-80 flex items-center justify-center">
-                    <span className="text-teal-600 font-bold text-xl">[Foto del Equipo]</span>
+                    <img src="https://media.puntal.com.ar/p/4e07f73438303fb686e359db0b60595d/adjuntos/270/imagenes/001/358/0001358872/psicologosjpg.jpg" alt="Medicos Psicologos" />
                 </div>
             </div>
             <div className="md:w-1/2 space-y-6">

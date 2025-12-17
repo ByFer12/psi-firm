@@ -8,6 +8,22 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage = () => {
+const redirectByRole = (role: number) => {
+  switch (role) {
+    case 6:
+      navigate('/dashboard/paciente'); // Corregido: antes decía /patient/dashboard
+      break;
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+      navigate('/dashboard/empleado');
+      break;
+    default:
+      navigate('/'); // Redirección segura por defecto
+      break;
+  }
+};
 const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,16 +37,22 @@ const [email, setEmail] = useState('');
     try {
       // POST /auth/login
       const response = await api.post('/auth/login', { email, password });
-      const token = response.data.token || response.data.accessToken; 
+      //const token = response.data.token || response.data.accessToken; 
+      const userData = response.data.user;
       
-      login(token);
+      login(userData);
+      console.log("Sesion iniciado retorna> ", userData.roleId)
       toast.success('Bienvenido de nuevo');
-      navigate('/'); 
+     
+      redirectByRole(userData.roleId);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
+
+
+
   };
 
   return (

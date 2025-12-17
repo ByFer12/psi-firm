@@ -34,13 +34,13 @@ function App() {
           <Route path="/api/auth/confirm-email/:token" element={<ConfirmEmailPage />} /> {/* URL que llega del email */}
 
           {/* Rutas Protegidas - PACIENTE */}
-          <Route element={<ProtectedRoute allowedRoles={['PATIENT']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[6]} />}>
             <Route path="/dashboard/paciente" element={<PatientDashboard />} />
             {/* <Route path="/dashboard/paciente/citas" element={<PatientAppointments />} /> */}
           </Route>
 
           {/* Rutas Protegidas - EMPLEADOS/ADMIN */}
-          <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'PSYCHOLOGIST', 'PSYCHIATRIST', 'ADMINISTRATIVE']} />}>
+          <Route element={<ProtectedRoute allowedRoles={[1, 2, 3, 4]} />}>
              <Route path="/dashboard/empleado" element={<EmployeeDashboard />} />
           </Route>
 

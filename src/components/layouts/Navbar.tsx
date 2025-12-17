@@ -1,10 +1,17 @@
-
-import { Brain, Menu, X } from 'lucide-react';
+import { Brain, Menu, X, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../UI/Button';
 import { NavHashLink as Link } from 'react-router-hash-link';
+import { useAuth } from '../../context/AuthContext';
+
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated, logout, user } = useAuth(); // 2. Extraer estados y función
+
+  const handleLogout = () => {
+    logout();
+    setIsOpen(false);
+  };
 
   return (
     <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -22,13 +29,28 @@ export const Navbar = () => {
             <Link smooth to="/#" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Inicio</Link>
             <Link smooth to="/#servicios" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Servicios</Link>
             <Link smooth to="/#nosotros" className="text-slate-600 hover:text-teal-600 transition-colors font-medium">Nosotros</Link>
+            
             <div className="flex items-center gap-3 ml-4">
-              <Link to="/login">
-                <Button variant="outline">Iniciar Sesión</Button>
-              </Link>
-              <Link to="/registro">
-                <Button variant="primary">Registrarse</Button>
-              </Link>
+              {/* Renderizado condicional basado en la sesión */}
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/login">
+                    <Button variant="outline">Iniciar Sesión</Button>
+                  </Link>
+                  <Link to="/registro">
+                    <Button variant="primary">Registrarse</Button>
+                  </Link>
+                </>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-slate-600 flex items-center gap-1">
+                    <User className="h-4 w-4" /> {user?.username}
+                  </span>
+                  <Button variant="outline" onClick={logout} className="flex items-center gap-2">
+                    <LogOut className="h-4 w-4" /> Cerrar Sesión
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -48,12 +70,28 @@ export const Navbar = () => {
             <Link smooth to="/" className="block text-slate-600 py-2">Inicio</Link>
             <Link smooth to="/#servicios" className="block text-slate-600 py-2">Servicios</Link>
             <Link smooth to="/#nosotros" className="block text-slate-600 py-2">Nosotros</Link>
-            <Link to="/login" className="block w-full">
-              <Button variant="outline" fullWidth>Iniciar Sesión</Button>
-            </Link>
-            <Link to="/registro" className="block w-full">
-              <Button fullWidth>Registrarse</Button>
-            </Link>
+            
+            <div className="pt-2 border-t border-gray-100 space-y-2">
+              {!isAuthenticated ? (
+                <>
+                  <Link to="/login" className="block w-full" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" fullWidth>Iniciar Sesión</Button>
+                  </Link>
+                  <Link to="/registro" className="block w-full" onClick={() => setIsOpen(false)}>
+                    <Button fullWidth>Registrarse</Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="px-2 py-2 text-slate-600 font-medium">
+                    Hola, {user?.username}
+                  </div>
+                  <Button variant="outline" fullWidth onClick={handleLogout} className="flex justify-center items-center gap-2">
+                    <LogOut className="h-4 w-4" /> Cerrar Sesión
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
