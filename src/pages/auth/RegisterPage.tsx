@@ -62,7 +62,7 @@ const navigate = useNavigate();
           <Input label="Correo electrónico" id="email" type="email" placeholder="juan@ejemplo.com" required value={formData.email} onChange={handleChange} />
           
           <Input label="Contraseña" id="password" type="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} />
-          <Input label="Confirmar contraseña" id="confirm_password" type="password" placeholder="••••••••" required value={formData.confirmPassword} onChange={handleChange} />
+          <Input label="Confirmar contraseña" id="confirmPassword" type="password" placeholder="••••••••" required value={formData.confirmPassword} onChange={handleChange} />
 
           <Button type="submit" fullWidth>
             Registrarse

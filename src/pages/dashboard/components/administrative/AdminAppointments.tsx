@@ -198,7 +198,7 @@ export const AdminAppointments = () => {
                             <option value="">-- Seleccione --</option>
                             {psychologists.map(p => (
                                 <option key={p.id} value={p.id}>
-                                    {p.employee.firstName} {p.employee.lastName} {p.specialty ? `(${p.specialty})` : ''}
+                                    {p.employee.firstName} {p.employee.lastName} {p.specialty? `(${p.specialty.name})` : ''}
                                 </option>
                             ))}
                         </select>
