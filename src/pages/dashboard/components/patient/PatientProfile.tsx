@@ -1,82 +1,64 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../../lib/api';
-import { useAuth } from '../../../context/AuthContext';
-import { Button } from '../../../components/UI/Button';
-import { Input } from '../../../components/UI/Input';
+import { api } from '../../../../lib/api';
+import { useAuth } from '../../../../context/AuthContext';
+import { Button } from '../../../../components/UI/Button';
+import { Input } from '../../../../components/UI/Input';
 import { 
   User, Phone, MapPin, HeartPulse, Save, Edit2, 
   Camera, Lock, Key, AlertTriangle, CheckCircle 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () => void }) => {
-  const { user } = useAuth(); // Obtenemos info básica del usuario (email, username)
+interface PatientProfileProps {
+  onProfileComplete?: () => void;
+  initialData?: any;
+}
+
+export const PatientProfile = ({ onProfileComplete, initialData }: PatientProfileProps) => {
+  const { user } = useAuth();
   
   // Estados de Control
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!initialData);
   const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
-  const [profileExists, setProfileExists] = useState(false);
+  const [profileExists, setProfileExists] = useState(!!initialData);
 
-  // Estado del Formulario de Datos
+  // Estado del Formulario sincronizado con initialData
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    identification: '', 
-    birthDate: '',
-    genderId: 1,
-    maritalStatusId: 1,
-    occupation: '',
-    educationLevelId: 3,
-    address: '',
-    phone: '',
-    emergencyContactName: '',
-    emergencyContactRelationshipId: 1,
-    emergencyContactPhone: '',
-    referralSourceId: 1,
-    referralOther: '',
-    consultationReason: ''
+    firstName: initialData?.firstName || '',
+    lastName: initialData?.lastName || '',
+    identification: initialData?.identification || '', 
+    birthDate: initialData?.birthDate ? new Date(initialData.birthDate).toISOString().split('T')[0] : '',
+    genderId: initialData?.genderId || 1,
+    maritalStatusId: initialData?.maritalStatusId || 1,
+    occupation: initialData?.occupation || '',
+    educationLevelId: initialData?.educationLevelId || 3,
+    address: initialData?.address || '',
+    phone: initialData?.phone || '',
+    emergencyContactName: initialData?.emergencyContactName || '',
+    emergencyContactRelationshipId: initialData?.emergencyContactRelationshipId || 1,
+    emergencyContactPhone: initialData?.emergencyContactPhone || '',
+    referralSourceId: initialData?.referralSourceId || 1,
+    referralOther: initialData?.referralOther || '',
+    consultationReason: initialData?.consultationReason || ''
   });
 
-  // Estado del Formulario de Contraseña
   const [passData, setPassData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
 
-  // Cargar perfil al iniciar
+  // Si los datos en el Dashboard cambian, actualizamos el formulario local
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/profile/me');
-      if (res.data) {
-        setProfileExists(true);
-        // Formatear fecha para el input type="date" (YYYY-MM-DD)
-        const date = res.data.birthDate ? new Date(res.data.birthDate).toISOString().split('T')[0] : '';
-        
-        setFormData({
-            ...res.data,
-            birthDate: date,
-            // Asegurarnos que los selects tengan valor numérico
-            genderId: res.data.genderId || 1,
-            maritalStatusId: res.data.maritalStatusId || 1,
-            educationLevelId: res.data.educationLevelId || 1,
-            emergencyContactRelationshipId: res.data.emergencyContactRelationshipId || 1,
-            referralSourceId: res.data.referralSourceId || 1
-        });
-      }
-    } catch (error) {
-      setProfileExists(false); // No tiene perfil, debe crearlo
-      setIsEditing(true); // Activar edición automáticamente
-    } finally {
-      setLoading(false);
+    if (initialData) {
+      setProfileExists(true);
+      setFormData(prev => ({
+        ...prev,
+        ...initialData,
+        birthDate: initialData.birthDate ? new Date(initialData.birthDate).toISOString().split('T')[0] : ''
+      }));
     }
-  };
+  }, [initialData]);
 
   const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -88,7 +70,6 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
     setPassData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Guardar Datos (Crear o Actualizar)
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -102,16 +83,13 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
       };
 
       if (profileExists) {
-        // ACTUALIZAR (PUT)
         await api.put('/profile/patient', payload);
         toast.success('Perfil actualizado correctamente');
         setIsEditing(false);
+        if (onProfileComplete) onProfileComplete();
       } else {
-        // CREAR (POST)
         await api.post('/profile/patient', payload);
         toast.success('Perfil creado exitosamente');
-        setProfileExists(true);
-        setIsEditing(false);
         if (onProfileComplete) onProfileComplete();
       }
     } catch (error: any) {
@@ -119,51 +97,30 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
     }
   };
 
-  // Cambiar Contraseña
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passData.newPassword !== passData.confirmPassword) {
-      return toast.error("Las nuevas contraseñas no coinciden");
-    }
-    if (passData.newPassword.length < 6) {
-        return toast.error("La contraseña debe tener al menos 6 caracteres");
-    }
-
+    if (passData.newPassword !== passData.confirmPassword) return toast.error("Las contraseñas no coinciden");
+    
     try {
       await api.post('/auth/change-password', {
         currentPassword: passData.currentPassword,
         newPassword: passData.newPassword
       });
-      toast.success("Contraseña actualizada. Por favor inicia sesión nuevamente.");
+      toast.success("Contraseña actualizada");
       setPassData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al cambiar contraseña");
     }
   };
 
-  const handlePhotoUpload = () => {
-    // Aquí iría la lógica de subida de imagen al backend
-    toast.info("Funcionalidad de subida de foto próximamente.");
-  };
-
-  if (loading) return <div className="p-10 text-center">Cargando perfil...</div>;
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      
-      {/* 1. CABECERA DE PERFIL */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row items-center gap-6">
         <div className="relative group">
             <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-3xl font-bold border-4 border-white shadow-sm overflow-hidden">
-                {/* Si tuvieras avatarUrl úsalo aquí, si no, iniciales */}
-                {user?.username.substring(0,2).toUpperCase()}
+                {(formData.firstName || user?.username)?.substring(0,2).toUpperCase()}
             </div>
-            {/* Botón flotante para cambiar foto */}
-            <button 
-                onClick={handlePhotoUpload}
-                className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-teal-600 transition shadow-sm"
-                title="Cambiar foto"
-            >
+            <button className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-teal-600 transition shadow-sm">
                 <Camera size={16} />
             </button>
         </div>
@@ -173,61 +130,40 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
                 {formData.firstName ? `${formData.firstName} ${formData.lastName}` : user?.username}
             </h1>
             <p className="text-slate-500">{user?.email}</p>
-            {!profileExists && (
+            {!profileExists ? (
                 <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full">
                     <AlertTriangle size={12}/> Perfil Incompleto
                 </span>
-            )}
-            {profileExists && (
+            ) : (
                  <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                     <CheckCircle size={12}/> Paciente Activo
                 </span>
             )}
         </div>
 
-        {/* Botones de Acción Global */}
         <div className="flex gap-2">
             {profileExists && !isEditing && (
-                <Button variant="outline" onClick={() => { setIsEditing(true); setActiveTab('info'); }}>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
                     <Edit2 size={16} className="mr-2"/> Editar Datos
                 </Button>
             )}
         </div>
       </div>
 
-      {/* 2. PESTAÑAS DE NAVEGACIÓN */}
       <div className="flex border-b border-gray-200 bg-white rounded-t-xl px-4">
-        <button
-            onClick={() => setActiveTab('info')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'info' 
-                ? 'border-teal-600 text-teal-600' 
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-        >
+        <button onClick={() => setActiveTab('info')} className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === 'info' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>
             <span className="flex items-center gap-2"><User size={18}/> Información Personal</span>
         </button>
         {profileExists && (
-            <button
-                onClick={() => setActiveTab('security')}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                    activeTab === 'security' 
-                    ? 'border-teal-600 text-teal-600' 
-                    : 'border-transparent text-slate-500 hover:text-slate-700'
-                }`}
-            >
+            <button onClick={() => setActiveTab('security')} className={`px-6 py-4 text-sm font-medium border-b-2 ${activeTab === 'security' ? 'border-teal-600 text-teal-600' : 'border-transparent text-slate-500'}`}>
                 <span className="flex items-center gap-2"><Lock size={18}/> Seguridad</span>
             </button>
         )}
       </div>
 
-      {/* 3. CONTENIDO DE PESTAÑAS */}
       <div className="bg-white rounded-b-xl shadow-sm border border-t-0 border-gray-200 p-6 md:p-8">
-        
-        {/* --- PESTAÑA: INFORMACIÓN PERSONAL --- */}
         {activeTab === 'info' && (
             <form onSubmit={handleSaveProfile} className="space-y-8">
-                 {/* BLOQUE 1: Datos Personales */}
                  <div>
                     <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                         <User className="text-teal-600" size={20}/> Datos Básicos
@@ -235,7 +171,6 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
                     <div className="grid md:grid-cols-2 gap-5">
                         <Input disabled={!isEditing} name="firstName" label="Nombres" value={formData.firstName} onChange={handleInfoChange} required />
                         <Input disabled={!isEditing} name="lastName" label="Apellidos" value={formData.lastName} onChange={handleInfoChange} required />
-                        {/* Identificación y Fecha Nacimiento bloqueados en edición por seguridad, o permitidos según política */}
                         <Input disabled={profileExists} name="identification" label="DPI / CUI" value={formData.identification} onChange={handleInfoChange} required />
                         <Input disabled={profileExists} type="date" name="birthDate" label="Fecha Nacimiento" value={formData.birthDate} onChange={handleInfoChange} required />
                         
@@ -258,7 +193,6 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
                     </div>
                  </div>
 
-                 {/* BLOQUE 2: Contacto */}
                  <div>
                     <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                         <Phone className="text-teal-600" size={20}/> Contacto
@@ -278,7 +212,6 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
                     </div>
                  </div>
 
-                 {/* BLOQUE 3: Emergencia (Solo visible en edición o creación para ahorrar espacio, o siempre visible) */}
                  <div>
                     <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
                         <HeartPulse className="text-teal-600" size={20}/> Contacto de Emergencia
@@ -304,14 +237,13 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
                      </div>
                  )}
 
-                 {/* Botones del Formulario Info */}
                  {isEditing && (
                      <div className="flex gap-4 pt-4 border-t">
                         <Button type="submit" className="px-8">
                             <Save size={18} className="mr-2"/> Guardar Cambios
                         </Button>
                         {profileExists && (
-                            <Button type="button" variant="outline" onClick={() => { setIsEditing(false); loadProfile(); }}>
+                            <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
                                 Cancelar
                             </Button>
                         )}
@@ -320,52 +252,16 @@ export const PatientProfile = ({ onProfileComplete }: { onProfileComplete?: () =
             </form>
         )}
 
-        {/* --- PESTAÑA: SEGURIDAD --- */}
         {activeTab === 'security' && (
             <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">Cambiar Contraseña</h3>
-                <p className="text-slate-500 text-sm mb-6">Asegúrate de usar una contraseña segura que no uses en otros sitios.</p>
-                
                 <form onSubmit={handleChangePassword} className="space-y-4">
-                    <div className="relative">
-                        <Key className="absolute left-3 top-9 text-slate-400 w-4 h-4" />
-                        <Input 
-                            type="password" 
-                            name="currentPassword" 
-                            label="Contraseña Actual" 
-                            className="pl-9"
-                            value={passData.currentPassword} 
-                            onChange={handlePassChange} 
-                            required 
-                        />
-                    </div>
-                    <hr className="border-gray-100 my-2"/>
-                    <Input 
-                        type="password" 
-                        name="newPassword" 
-                        label="Nueva Contraseña" 
-                        value={passData.newPassword} 
-                        onChange={handlePassChange} 
-                        required 
-                    />
-                    <Input 
-                        type="password" 
-                        name="confirmPassword" 
-                        label="Confirmar Nueva Contraseña" 
-                        value={passData.confirmPassword} 
-                        onChange={handlePassChange} 
-                        required 
-                    />
-
-                    <div className="pt-4">
-                        <Button type="submit" fullWidth>
-                            Actualizar Contraseña
-                        </Button>
-                    </div>
+                    <Input type="password" name="currentPassword" label="Contraseña Actual" value={passData.currentPassword} onChange={handlePassChange} required />
+                    <Input type="password" name="newPassword" label="Nueva Contraseña" value={passData.newPassword} onChange={handlePassChange} required />
+                    <Input type="password" name="confirmPassword" label="Confirmar Nueva Contraseña" value={passData.confirmPassword} onChange={handlePassChange} required />
+                    <Button type="submit" fullWidth>Actualizar Contraseña</Button>
                 </form>
             </div>
         )}
-
       </div>
     </div>
   );

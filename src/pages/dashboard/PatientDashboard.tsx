@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { api } from '../../lib/api';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -10,68 +11,117 @@ import {
   LogOut, 
   Menu, 
   X,
-  Search
+  Search,
+  ListTodo
 } from 'lucide-react';
-import { PatientProfile } from './components/PatientProfile';
+import { PatientProfile } from './components/patient/PatientProfile';
 import { Button } from '../../components/UI/Button';
-import { PatientAppointments } from './components/PatientAppointments'; // Importamos el componente de citas creado arriba
+import { PatientAppointments } from './components/patient/PatientAppointments';
+import { Notifications } from './components/patient/Notification';
 
 export const PatientDashboard = () => {
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'citas' | 'historial' | 'pagos' | 'perfil' | 'notificaciones'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'citas' | 'historial' | 'pagos' | 'perfil' | 'notificaciones'|'tareas'>('inicio');
+  
+  // --- Estado Global del Perfil ---
+  const [profileData, setProfileData] = useState<any>(null);
+  const [noti,setNoti]= useState([]);
+  const [notiR,setRNoti]= useState([]);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const loadProfile = async () => {
+    try {
+      setLoadingProfile(true);
+      const res = await api.get('/profile/me');
+      console.log("Perfil Encontrado: ",res.data)
+      if (res.data) {
+        setProfileData(res.data);
+      }
+    } catch (error) {
+      console.log("Perfil no encontrado o pendiente de crear");
+      setProfileData(null);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const loadNotifications= async()=>{
+    try{
+      const res = await api.get("/notifications/getNoti");
+      setNoti(res.data)
+      console.log("Respuesta de Noti: ", res.data);
+    }catch(error){
+       console.log("Notificaciones no encontrados");
+      
+    }
+    }
+
+const loadNotificationsLeidas= async()=>{
+    try{
+      const res = await api.get("/notifications/getReadedNoti");
+      setRNoti(res.data)
+      console.log("Noti Leidas: ", res.data);
+    }catch(error){
+       console.log("Notificaciones no encontrados");
+      
+    }
+    }
+
+
+  useEffect(() => {
+    loadProfile();
+    loadNotifications();
+    loadNotificationsLeidas();
+  }, []);
 
   // Menú lateral
   const menuItems = [
     { id: 'inicio', label: 'Inicio', icon: LayoutDashboard },
     { id: 'citas', label: 'Mis Citas', icon: Calendar },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell, text:noti.length },
     { id: 'historial', label: 'Historial Clínico', icon: FileText },
     { id: 'pagos', label: 'Pagos y Facturas', icon: CreditCard },
+    { id: 'tareas', label: 'Tareas Asignadas', icon: ListTodo },
     { id: 'perfil', label: 'Mi Perfil', icon: User },
   ];
 
-  // Componente de renderizado de contenido
   const renderContent = () => {
     switch(activeTab) {
       case 'citas':
         return <PatientAppointments onRequestProfileRedirect={() => setActiveTab('perfil')} />;
       
       case 'notificaciones':
+        return <Notifications
+                  notiUnread={noti}
+                  notiReaded={notiR}
+                  viewNoti={()=>{
+                    loadNotifications();
+                  }
+
+                  }
+
+                  />;
+
+      case 'perfil':
         return (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-slate-800 mb-4">Notificaciones</h2>
-            <div className="space-y-4">
-              {/* Mock de notificaciones */}
-              <div className="flex gap-4 p-4 bg-teal-50 rounded-lg border border-teal-100">
-                <Bell className="text-teal-600 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-slate-800">Bienvenido a PsiFirm</h4>
-                  <p className="text-sm text-slate-600">Completa tu perfil para agilizar tus solicitudes de citas.</p>
-                  <span className="text-xs text-slate-400 mt-1 block">Hace 1 hora</span>
-                </div>
-              </div>
-              <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <Calendar className="text-slate-500 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-slate-800">Recordatorio</h4>
-                  <p className="text-sm text-slate-600">Recuerda llegar 10 minutos antes de tu cita presencial.</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PatientProfile 
+            initialData={profileData} 
+            onProfileComplete={() => {
+              loadProfile(); // Recarga datos en el dashboard
+              setActiveTab('citas');
+            }} 
+          />
         );
-        case 'perfil':
-        // Pasamos función para volver al inicio o citas cuando termine
-        return <PatientProfile onProfileComplete={() => setActiveTab('citas')} />;
 
       case 'inicio':
       default:
         return (
           <div className="space-y-6">
-            {/* Header de Bienvenida */}
             <div className="bg-gradient-to-r from-teal-600 to-teal-800 rounded-2xl p-8 text-white shadow-lg">
-              <h1 className="text-3xl font-bold mb-2">Hola, {user?.username}</h1>
+              <h1 className="text-3xl font-bold mb-2">
+                Hola, {profileData?.firstName || user?.username}
+              </h1>
               <p className="text-teal-100 max-w-xl">Bienvenido a tu panel de salud. Aquí puedes gestionar tus citas, revisar tu progreso y mantenerte en contacto con tus especialistas.</p>
               <div className="mt-6 flex gap-3">
                 <Button className="bg-white text-teal-700 hover:bg-gray-100 border-none" onClick={() => setActiveTab('citas')}>
@@ -80,7 +130,6 @@ export const PatientDashboard = () => {
               </div>
             </div>
 
-            {/* Stats Rápidos */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition cursor-pointer" onClick={() => setActiveTab('citas')}>
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mb-4">
@@ -131,8 +180,18 @@ export const PatientDashboard = () => {
                   ? 'bg-teal-50 text-teal-700' 
                   : 'text-slate-600 hover:bg-gray-50 hover:text-slate-900'
               }`}
-            >
-              <item.icon size={20} />
+            > 
+             <div className="relative">
+              <item.icon size={20}/>
+              
+              {/* Solo mostramos el badge si es la pestaña de notificaciones y hay más de 0 */}
+              {item.id === "notificaciones" && noti.length > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                  {noti.length}
+                </span>
+              )}
+            </div>
+              
               {item.label}
             </button>
           ))}
@@ -149,7 +208,7 @@ export const PatientDashboard = () => {
         </div>
       </aside>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setIsMobileMenuOpen(false)}>
           <div className="bg-white w-64 h-full p-4 flex flex-col" onClick={e => e.stopPropagation()}>
@@ -173,9 +232,7 @@ export const PatientDashboard = () => {
         </div>
       )}
 
-      {/* Main Content Area */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        {/* Top Header */}
         <header className="bg-white border-b border-gray-200 h-16 sticky top-0 z-20 px-4 md:px-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button className="md:hidden text-slate-600" onClick={() => setIsMobileMenuOpen(true)}>
@@ -199,15 +256,16 @@ export const PatientDashboard = () => {
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-               {user?.username?.substring(0,2).toUpperCase()}
+               {(profileData?.firstName || user?.username)?.substring(0,2).toUpperCase()}
             </div>
           </div>
         </header>
 
-        {/* Dynamic Content */}
         <main className="p-4 md:p-8 overflow-y-auto flex-1">
           <div className="max-w-6xl mx-auto">
-             {renderContent()}
+             {loadingProfile && activeTab === 'inicio' ? (
+               <div className="text-center p-10">Cargando datos...</div>
+             ) : renderContent()}
           </div>
         </main>
       </div>
