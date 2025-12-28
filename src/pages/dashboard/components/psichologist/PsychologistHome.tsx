@@ -20,14 +20,14 @@ export const PsychologistHome = ({
   });
     
   const prueba=()=>{
-    console.log("Holaaaaaaa homeeee de psychologist");
+    console.log("Holaaaaaaa homeeee de psychologist",user);
   }
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-800 to-teal-900 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold mb-2">Hola, Dr. {user?.username} 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">Hola, Dr. {user?.firstName} 👋</h1>
           <p className="text-slate-200 max-w-xl text-lg opacity-90">
             Tienes <strong className="text-teal-300">{stats.todayCount} sesiones</strong> programadas para hoy. 
             Recuerda revisar los expedientes antes de cada consulta.
@@ -68,13 +68,6 @@ export const PsychologistHome = ({
             value={stats.activePatients.toString()}
             sub="Total en tratamiento"
         />
-        <CardStat 
-            icon={<Clock size={24} />} 
-            color="bg-amber-100 text-amber-600"
-            label="Horas Clínicas"
-            value="24h" 
-            sub="Esta semana"
-        />
          <CardStat 
             icon={<TrendingUp size={24} />} 
             color="bg-purple-100 text-purple-600"
@@ -84,7 +77,7 @@ export const PsychologistHome = ({
         />
       </div>
 
-      {/* Sección de accesos rápidos o noticias internas */}
+      {/* Sección de accesos rápidos o noticias internas 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -104,6 +97,7 @@ export const PsychologistHome = ({
             </div>
         </div>
       </div>
+      */}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Clock, User, Calendar as CalIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, MapPin, Calendar as CalIcon } from 'lucide-react';
 
 interface AgendaProps {
   appointments: any[];
@@ -10,7 +10,7 @@ export const PsychologistAgenda = ({ appointments, onSelectAppointment }: Agenda
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // --- LÓGICA DE CALENDARIO ---
+  // --- LÓGICA CALENDARIO ---
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -23,61 +23,61 @@ export const PsychologistAgenda = ({ appointments, onSelectAppointment }: Agenda
   const daysArray = Array.from({ length: days }, (_, i) => i + 1);
   const blanks = Array.from({ length: firstDay }, (_, i) => i);
 
-  const handlePrevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
-  };
-  const handleNextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  const handlePrevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const handleNextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+
+  // --- HELPERS DE FECHA (Para evitar problemas de zona horaria) ---
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
   };
 
-  // --- LÓGICA DE HORAS ---
-  // Filtramos citas para el día seleccionado
+  // --- LÓGICA HORAS ---
+  // 1. Filtramos las citas que pertenecen al DÍA seleccionado
   const dayAppointments = appointments.filter(appt => {
+    // new Date() convierte automáticamente la fecha UTC del backend a tu Hora Local
     const apptDate = new Date(appt.appointmentDate);
-    // Ajuste de zona horaria simple si viene en UTC
-    apptDate.setMinutes(apptDate.getMinutes() + apptDate.getTimezoneOffset());
     
-    return (
-        apptDate.getDate() === selectedDate.getDate() &&
-        apptDate.getMonth() === selectedDate.getMonth() &&
-        apptDate.getFullYear() === selectedDate.getFullYear() &&
-        (appt.statusId === 1 || appt.statusId === 2) // Solo pendientes o confirmadas
-    );
+    // Verificamos si coinciden día, mes y año sin alterar la hora
+    return isSameDay(apptDate, selectedDate) && (appt.statusId === 1 || appt.statusId === 2);
   });
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 7); // 7:00 a 18:00
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-200px)]">
+    <div className="flex flex-col lg:flex-row gap-6 h-full pb-6">
       
-      {/* COLUMNA IZQUIERDA: CALENDARIO */}
-      <div className="w-full lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+      {/* IZQUIERDA: CALENDARIO */}
+      <div className="w-full lg:w-80 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col shrink-0 h-fit">
         <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 text-lg capitalize">
+            <h3 className="font-bold text-slate-800 capitalize">
                 {currentMonth.toLocaleString('es-ES', { month: 'long', year: 'numeric' })}
             </h3>
-            <div className="flex gap-2">
-                <button onClick={handlePrevMonth} className="p-1 hover:bg-slate-100 rounded-full"><ChevronLeft size={20}/></button>
-                <button onClick={handleNextMonth} className="p-1 hover:bg-slate-100 rounded-full"><ChevronRight size={20}/></button>
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                <button onClick={handlePrevMonth} className="p-1 hover:bg-white rounded shadow-sm transition"><ChevronLeft size={16}/></button>
+                <button onClick={handleNextMonth} className="p-1 hover:bg-white rounded shadow-sm transition"><ChevronRight size={16}/></button>
             </div>
         </div>
 
+        {/* CORRECCIÓN 1: Usamos el índice (i) como key para evitar duplicados en 'M' */}
         <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 mb-2">
-            {['D','L','M','M','J','V','S'].map(d => <div key={d} className="py-1">{d}</div>)}
+            {['D','L','M','M','J','V','S'].map((d, i) => <div key={i} className="py-1">{d}</div>)}
         </div>
         
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1 mb-6">
             {blanks.map((_, i) => <div key={`blank-${i}`} />)}
             {daysArray.map(day => {
                 const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                const isSelected = date.toDateString() === selectedDate.toDateString();
-                const isToday = date.toDateString() === new Date().toDateString();
+                const isSelected = isSameDay(date, selectedDate);
+                const isToday = isSameDay(date, new Date());
                 
-                // Verificar si hay citas ese día (para poner un puntito)
+                // Verificar si hay cita este día
                 const hasAppt = appointments.some(a => {
                     const d = new Date(a.appointmentDate);
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset());
-                    return d.toDateString() === date.toDateString() && a.statusId !== 5;
+                    return isSameDay(d, date) && a.statusId !== 5;
                 });
 
                 return (
@@ -85,84 +85,94 @@ export const PsychologistAgenda = ({ appointments, onSelectAppointment }: Agenda
                         key={day}
                         onClick={() => setSelectedDate(date)}
                         className={`
-                            h-10 w-10 mx-auto rounded-full flex flex-col items-center justify-center text-sm transition-all relative
-                            ${isSelected ? 'bg-slate-800 text-white shadow-lg scale-105' : 'hover:bg-slate-50 text-slate-700'}
-                            ${isToday && !isSelected ? 'text-teal-600 font-bold border border-teal-200' : ''}
+                            h-9 w-9 mx-auto rounded-full flex flex-col items-center justify-center text-sm transition-all relative
+                            ${isSelected ? 'bg-slate-800 text-white shadow-md' : 'hover:bg-slate-50 text-slate-700'}
+                            ${isToday && !isSelected ? 'text-teal-600 font-bold bg-teal-50' : ''}
                         `}
                     >
                         {day}
                         {hasAppt && !isSelected && (
-                            <span className="absolute bottom-1.5 w-1 h-1 bg-teal-500 rounded-full"></span>
+                            <span className="absolute bottom-1 w-1 h-1 bg-teal-500 rounded-full"></span>
                         )}
                     </button>
                 );
             })}
         </div>
 
-        <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
-             <h4 className="font-bold text-blue-800 mb-1 flex items-center gap-2"><CalIcon size={16}/> Resumen del día</h4>
-             <p className="text-sm text-blue-600">
+        <div className="pt-6 border-t border-slate-100">
+             <div className="flex items-center gap-2 mb-2">
+                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><CalIcon size={18}/></div>
+                 <div className="text-sm font-bold text-slate-700">Resumen</div>
+             </div>
+             <p className="text-xs text-slate-500 mb-1 capitalize">
                  {selectedDate.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'})}
              </p>
-             <p className="text-2xl font-bold text-slate-800 mt-2">{dayAppointments.length} Citas</p>
+             <p className="text-2xl font-bold text-slate-800">{dayAppointments.length} <span className="text-sm font-normal text-slate-400">Pacientes</span></p>
         </div>
       </div>
 
-      {/* COLUMNA DERECHA: TIMELINE DE HORAS */}
-      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-        <div className="p-4 border-b bg-slate-50 font-semibold text-slate-700">
-            Horario Detallado
+      {/* DERECHA: TIMELINE */}
+      <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden min-h-[500px]">
+        <div className="p-4 border-b bg-slate-50 flex justify-between items-center">
+            <span className="font-bold text-slate-700 text-sm">Horario Diario</span>
+            <div className="text-xs text-slate-400 flex gap-3">
+                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Confirmada</span>
+                 <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-400"></div> Pendiente</span>
+            </div>
         </div>
-        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+        
+        <div className="overflow-y-auto flex-1 p-4 space-y-2 custom-scrollbar">
             {hours.map(hour => {
-                // Buscar si hay cita en esta hora
+                // CORRECCIÓN 2: Buscamos la cita usando getHours() directamente sobre la fecha local
                 const foundAppt = dayAppointments.find(a => {
                     const d = new Date(a.appointmentDate);
-                    d.setMinutes(d.getMinutes() + d.getTimezoneOffset()); // Ajuste UTC
                     return d.getHours() === hour;
                 });
-
-                const isLunch = hour === 13; // Ejemplo de hora de comida
+                
+                const isLunch = hour === 13; 
 
                 return (
-                    <div key={hour} className="flex gap-4 group">
-                        <div className="w-16 text-right text-sm text-slate-400 font-medium pt-2">
+                    <div key={hour} className="flex gap-4 group min-h-[70px]">
+                        <div className="w-14 text-right text-xs text-slate-400 font-bold pt-3">
                             {hour}:00
                         </div>
-                        <div className="flex-1 min-h-[60px] relative">
-                            {/* Línea de guía */}
-                            <div className="absolute top-3 left-0 w-full h-px bg-slate-100 group-hover:bg-slate-200 transition-colors"></div>
+                        <div className="flex-1 relative">
+                            {/* Linea divisoria */}
+                            <div className="absolute top-4 left-0 w-full h-px bg-slate-100 group-hover:bg-slate-200 transition-colors"></div>
                             
                             {foundAppt ? (
                                 <button 
                                     onClick={() => onSelectAppointment(foundAppt)}
                                     className={`
-                                        absolute top-0 left-0 w-full h-[90%] rounded-lg border-l-4 p-2 text-left transition-all hover:scale-[1.01] hover:shadow-md
+                                        relative z-10 w-full h-full rounded-xl border-l-4 p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md
                                         ${foundAppt.statusId === 2 
-                                            ? 'bg-green-50 border-green-500 text-green-800' 
-                                            : 'bg-yellow-50 border-yellow-400 text-yellow-800'}
+                                            ? 'bg-green-50 border-green-500' 
+                                            : 'bg-yellow-50 border-yellow-400'}
                                     `}
                                 >
                                     <div className="flex justify-between items-start">
-                                        <span className="font-bold text-sm">
-                                            {foundAppt.patient.firstName} {foundAppt.patient.lastName}
-                                        </span>
-                                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-70">
-                                            {foundAppt.statusId === 2 ? 'Confirmada' : 'Pendiente'}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs mt-1 opacity-80 flex items-center gap-1">
-                                        <Clock size={12}/> {foundAppt.durationMinutes || 60} min
-                                        <span className="mx-1">•</span>
-                                        <User size={12}/> {foundAppt.patient.phone}
+                                        <div>
+                                            <p className={`font-bold text-sm ${foundAppt.statusId === 2 ? 'text-green-800' : 'text-yellow-800'}`}>
+                                                {foundAppt.patient.firstName} {foundAppt.patient.lastName}
+                                            </p>
+                                            <p className="text-xs opacity-80 mt-1 flex items-center gap-2">
+                                                <Clock size={12}/> {foundAppt.durationMinutes || 60} min
+                                                <span className="w-1 h-1 bg-current rounded-full"></span>
+                                                <MapPin size={12}/> Consultorio 1
+                                            </p>
+                                        </div>
+                                        <div className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full bg-white/50
+                                            ${foundAppt.statusId === 2 ? 'text-green-700' : 'text-yellow-700'}`}>
+                                            {foundAppt.statusId === 2 ? 'CONFIRMADA' : 'PENDIENTE'}
+                                        </div>
                                     </div>
                                 </button>
                             ) : isLunch ? (
-                                <div className="absolute top-0 left-0 w-full h-[90%] rounded-lg bg-slate-100/50 border border-slate-100 flex items-center justify-center">
-                                    <span className="text-xs text-slate-400 italic">Posible hora de almuerzo</span>
+                                <div className="w-full h-full rounded-xl bg-slate-50 border border-slate-100 border-dashed flex items-center justify-center relative z-10">
+                                    <span className="text-xs text-slate-400 italic font-medium">Hora de Almuerzo</span>
                                 </div>
                             ) : (
-                                <div className="h-full pt-2 pl-4 text-xs text-slate-300 group-hover:text-teal-400 transition-colors cursor-default">
+                                <div className="h-full pt-2 pl-4 text-xs text-slate-300 group-hover:text-teal-500 transition-colors cursor-default select-none">
                                     Disponible
                                 </div>
                             )}

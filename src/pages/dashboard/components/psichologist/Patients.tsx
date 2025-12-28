@@ -86,11 +86,11 @@ interface ClinicalHistory {
   prescriptions: any[];
 }
 
-export const Patients = () => {
+export const Patients = ({patientsList}) => {
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [activeTab, setActiveTab] = useState<'resumen' | 'antecedentes' | 'evaluacion' | 'sesiones'>('resumen');
   
-  const [patientsList, setPatientsList] = useState<any[]>([]);
+  //const [patientsList, setPatientsList] = useState<any[]>([]);
   const [record, setRecord] = useState<ClinicalHistory | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -111,29 +111,8 @@ export const Patients = () => {
     return map[id] || 'Individual';
   };
 
-  const getScoreColor = (val: number) => {
-    if (val <= 2) return "bg-red-100 text-red-700";
-    if (val === 3) return "bg-yellow-100 text-yellow-700";
-    return "bg-green-100 text-green-700";
-  };
 
-  // --- CARGA DE DATOS ---
-  useEffect(() => {
-    loadMyPatients();
-  }, []);
 
-  const loadMyPatients = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/clinical/psychologists/my-patients'); 
-      console.log("Resultado de pacientes: ", res.data)
-      setPatientsList(res.data);
-    } catch (error) {
-      console.error("Error", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
     const handleExpandPatient = async (patientId: number) => {
     if (expandedPatientId === patientId) {
@@ -160,6 +139,7 @@ export const Patients = () => {
       setLoading(true);
       // Llama a la nueva ruta que busca por ID de expediente
       const res = await api.get(`/clinical-records/${recordId}/full`);
+      console.log("Expediente selecionado: ",res.data);
       setRecord(res.data);
       setView('detail');
       setActiveTab('resumen');
@@ -174,7 +154,7 @@ export const Patients = () => {
     if(!record) return;
     try {
         toast.info("Generando PDF...");
-        const response = await api.get(`/clinical-records/patient/${record.patient.id}/pdf`, { responseType: 'blob' });
+        const response = await api.get(`/clinical-records/${record.id}/pdf`, { responseType: 'blob' });
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
@@ -532,8 +512,13 @@ export const Patients = () => {
                          <div className="space-y-3">
                             {record.prescriptions && record.prescriptions.length > 0 ? record.prescriptions.map((pre, idx) => (
                                 <div key={idx} className="bg-purple-50 p-3 rounded border border-purple-100">
-                                    <span className="font-bold text-slate-700 block">{pre.medication}</span>
-                                    <span className="text-xs text-slate-500">{pre.dosage}</span>
+                                    <span className="font-bold text-slate-700 block">{pre.medication.name}</span>
+                                    <span className="text-xs text-slate-500 block"><strong>Nombre generico:</strong> {pre.medication.genericName} </span>
+                                    <span className="text-xs text-slate-500"><strong>Instrucciones:</strong> {pre.dosage} </span>
+                                      <span className="text-xs text-slate-500">cada {pre.frequency} </span>
+                                    <span className="text-xs text-slate-500">por {pre.duration}</span> 
+                                     <p className="text-xs text-slate-500"> <strong>Presentacion:</strong> {pre.medication.presentation}</p>                                     
+                                      <p className="text-xs text-slate-500"><strong>Observaciones: </strong>{pre.instructions}</p>
                                 </div>
                             )) : <p className="text-sm text-slate-400 italic">Sin medicación prescrita.</p>}
                         </div>
