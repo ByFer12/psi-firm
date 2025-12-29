@@ -1,36 +1,59 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, Users, Calendar, ShoppingCart, 
   DollarSign, FileText, ClipboardList, LogOut, Menu, X, Bell 
 } from 'lucide-react';
 
-// IMPORTAR TUS NUEVOS COMPONENTES
+// IMPORTACIÓN DE COMPONENTES
 import { AdminAppointments } from './components/administrative/AdminAppointments';
+import { AdminInventory } from './components/administrative/AdminInventory';
+import { AdminBilling } from './components/administrative/AdminBilling';
+import { AdminPayroll } from './components/administrative/AdminPayroll';
+import { AdminEmployees } from './components/administrative/AdminEmployees';
 import { AdminReports } from './components/administrative/AdminReports';
-import { AdminInventory } from './components/administrative/AdminInventory'; // <--- NUEVO
-import { AdminBilling } from './components/administrative/AdminBilling';       // <--- NUEVO
-import { AdminPayroll } from './components/administrative/AdminPayroll';       // <--- NUEVO
+import { api } from '../../lib/api';
 
-// Componente Placeholder (Solo queda para Pacientes por ahora)
-const PlaceholderModule = ({ title }: { title: string }) => (
-  <div className="p-10 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex flex-col items-center justify-center min-h-[400px]">
-    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-        <Users className="text-gray-400" size={32} />
-    </div>
-    <h2 className="text-xl font-bold text-slate-400">{title}</h2>
-    <p className="text-slate-500 mt-2 max-w-md">Este módulo está en desarrollo. Pronto podrás gestionar admisiones aquí.</p>
-  </div>
-);
+// Interfaz para tipar los datos que vienen de /profile/me
+interface EmployeeProfile {
+  firstName: string;
+  lastName: string;
+  identification: string;
+  profileType: string;
+  status: string;
+  // Puedes agregar más campos según el JSON que recibes
+}
 
 export const AdministrativeDashboard = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('inicio');
+  
+  // Estado para el perfil del empleado
+  const [usser, setUsser] = useState<EmployeeProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // useEffect con [] para ejecutarse SOLO UNA VEZ al cargar el componente
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/profile/me");
+      setUsser(res.data); // Guardamos la data del JSON
+      console.log("Perfil cargado correctamente");
+    } catch (error) {
+      console.error("Error al obtener el perfil:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const menuItems = [
     { id: 'inicio', label: 'Resumen General', icon: LayoutDashboard },
-    { id: 'pacientes', label: 'Gestión Pacientes', icon: Users }, 
+    { id: 'pacientes', label: 'Gestión Empleados', icon: Users }, 
     { id: 'citas', label: 'Control de Citas', icon: Calendar }, 
     { id: 'inventario', label: 'Inventario y Farmacia', icon: ShoppingCart }, 
     { id: 'facturacion', label: 'Caja y Facturación', icon: DollarSign }, 
@@ -39,30 +62,37 @@ export const AdministrativeDashboard = () => {
   ];
 
   const renderContent = () => {
+    // Si está cargando el perfil, mostrar un spinner simple
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+            </div>
+        );
+    }
+
     switch (activeTab) {
       case 'citas':
         return <AdminAppointments />; 
       case 'pacientes':
-        return <PlaceholderModule title="Módulo de Admisión de Pacientes" />;
-      
-      // --- CONECTAMOS LOS NUEVOS MÓDULOS ---
+        return <AdminEmployees />;
       case 'inventario':
         return <AdminInventory />;
       case 'facturacion':
         return <AdminBilling />;
       case 'nomina':
         return <AdminPayroll />;
-      
       case 'reportes':
         return <AdminReports />;
-      
       case 'inicio':
       default:
         return (
             <div className="space-y-6 animate-fade-in">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Hola, {user?.username} 👋</h1>
+                        <h1 className="text-2xl font-bold text-slate-800">
+                            Hola, {usser?.firstName || 'Usuario'}
+                        </h1>
                         <p className="text-slate-500">Aquí tienes el resumen de hoy.</p>
                     </div>
                     <div className="text-sm text-slate-400 bg-white px-4 py-2 rounded-lg border border-gray-200">
@@ -94,7 +124,6 @@ export const AdministrativeDashboard = () => {
     }
   };
 
-  // ... (El resto del return con Sidebar y Header se mantiene IGUAL que tu código original)
   return (
     <div className="min-h-screen bg-gray-50 flex font-sans">
       {/* Sidebar */}
@@ -138,12 +167,19 @@ export const AdministrativeDashboard = () => {
                     <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
                 </button>
                 <div className="h-8 w-px bg-gray-200 mx-2"></div>
+                
+                {/* Datos dinámicos del perfil cargado */}
                 <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold text-slate-800">{user?.username || 'Usuario'}</p>
-                    <p className="text-xs text-slate-500 font-medium">Administrador</p>
+                    <p className="text-sm font-bold text-slate-800">
+                        {usser ? `${usser.firstName} ${usser.lastName}` : 'Cargando...'}
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium">
+                        {usser?.profileType || 'Administrador'}
+                    </p>
                 </div>
+                
                 <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
-                    {user?.username?.charAt(0).toUpperCase() || 'A'}
+                    {usser?.firstName?.charAt(0).toUpperCase() || 'A'}
                 </div>
             </div>
         </header>

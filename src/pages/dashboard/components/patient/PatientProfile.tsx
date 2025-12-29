@@ -4,8 +4,8 @@ import { useAuth } from '../../../../context/AuthContext';
 import { Button } from '../../../../components/UI/Button';
 import { Input } from '../../../../components/UI/Input';
 import { 
-  User, Phone, MapPin, HeartPulse, Save, Edit2, 
-  Camera, Lock, Key, AlertTriangle, CheckCircle 
+  User, Phone, HeartPulse, Save, Edit2, 
+  Camera, Lock,AlertTriangle, CheckCircle 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 

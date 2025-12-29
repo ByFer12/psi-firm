@@ -1,5 +1,5 @@
 import { 
-  Users, Stethoscope, Clock, CalendarCheck, Activity, TrendingUp 
+  Users, Stethoscope, CalendarCheck, Activity, TrendingUp 
 } from 'lucide-react';
 import { Button } from '../../../../components/UI/Button';
 import { useEffect } from 'react';

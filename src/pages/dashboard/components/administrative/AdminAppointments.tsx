@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../../../../lib/api';
 import { Button } from '../../../../components/UI/Button';
 import { 
-  Search, Filter, Clock, Calendar as CalIcon, UserPlus, 
+   Clock, Calendar as CalIcon, UserPlus, 
   AlertCircle, FileText, XCircle, Trash2, Eye, Calendar, RefreshCw 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -61,7 +61,6 @@ export const AdminAppointments = () => {
   });
   
   const [busyHours, setBusyHours] = useState<number[]>([]); 
-  const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -476,8 +475,7 @@ export const AdminAppointments = () => {
                                     const isSelected = assignForm.time === timeStr;
                                     
                                     const isBreak = [8, 10, 13, 15].includes(hour);
-                                    let breakLabel = hour === 8 ? "Desayuno" : hour === 13 ? "Almuerzo" : "Refacción";
-
+                                    
                                     return (
                                         <button
                                             key={hour}

@@ -10,7 +10,6 @@ import {
     Loader2,
     Eye,
     Calendar,
-    DollarSign
 } from 'lucide-react';
 import { Button } from '../../../../components/UI/Button';
 

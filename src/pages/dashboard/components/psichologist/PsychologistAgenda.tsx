@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Clock, MapPin, Calendar as CalIcon } from 'lucide-react';
 
 interface AgendaProps {

@@ -19,6 +19,8 @@ import { Button } from '../../components/UI/Button';
 import { PatientAppointments } from './components/patient/PatientAppointments';
 import { Notifications } from './components/patient/Notification';
 import { PatientInvoices } from './components/patient/PatientInvoices';
+import { PatientHistory } from './components/patient/PatientHistory';
+import { PatientTasks } from './components/patient/PatientTasks';
 
 export const PatientDashboard = () => {
   const { user, logout } = useAuth();
@@ -117,6 +119,12 @@ const loadNotificationsLeidas= async()=>{
 
         case 'pagos':
           return <PatientInvoices />;
+
+        case 'historial':
+          return <PatientHistory />;
+
+              case 'tareas':
+          return <PatientTasks />;
 
       case 'inicio':
       default:

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../lib/api'; // Asegúrate de que esta instancia tenga withCredentials: true
+import { api } from '../lib/api';
 
 export type UserRole = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -8,14 +8,19 @@ interface User {
   username: string;
   email: string;
   roleId: UserRole;
-  // Añade aquí otros campos no sensibles que devuelva tu API
+}
+
+// Interfaz para los datos que recibes en el login
+interface LoginData {
+    email: string;
+    password: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userData: User) => void;
+  login: (data: LoginData) => Promise<any>; // Corregido el tipo
   logout: () => void;
   checkAuth: () => Promise<void>;
 }
@@ -24,16 +29,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Función para verificar si el usuario sigue autenticado (usando la cookie)
+  // Verificar sesión al cargar
   const checkAuth = async () => {
+    // Si no hay token guardado, no intentamos llamar al backend
+    const token = localStorage.getItem('token');
+    if (!token) {
+        setIsLoading(false);
+        return;
+    }
+
     try {
-      // Debes crear una ruta GET /auth/me en tu backend
       const response = await api.get('/auth/me');
       setUser(response.data);
+      setIsAuthenticated(true);
     } catch (error) {
+      console.error("Error verificando sesión", error);
+      localStorage.removeItem('token'); // Si falla, limpiamos
       setUser(null);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -43,24 +59,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    // Ya no guardamos token en localStorage, la cookie ya está en el navegador
+  // Función de Login
+  const login = async (data: LoginData) => {
+    try {
+      const res = await api.post('/auth/login', data);
+      
+      // 1. GUARDAMOS EL TOKEN
+      if (res.data.tokens && res.data.tokens.accessToken) {
+          localStorage.setItem('token', res.data.tokens.accessToken);
+      }
+      
+      // 2. Guardamos el usuario
+      setUser(res.data.user);
+      setIsAuthenticated(true);
+      return res.data;
+    } catch (error) {
+        throw error;
+    }
   };
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout'); // El backend debe limpiar las cookies
+        // Opcional: Avisar al backend
+        // await api.post('/auth/logout'); 
+    } catch (e) {
+        console.error(e);
     } finally {
-      setUser(null);
-      // Opcional: limpiar cualquier rastro en memoria y redirigir
+        // Limpieza local
+        localStorage.removeItem('token');
+        setUser(null);
+        setIsAuthenticated(false);
     }
   };
 
   return (
     <AuthContext.Provider value={{ 
       user, 
-      isAuthenticated: !!user, 
+      isAuthenticated, 
       isLoading,
       login, 
       logout,

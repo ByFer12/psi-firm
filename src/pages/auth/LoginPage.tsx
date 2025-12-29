@@ -3,28 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 import { Button } from '../../components/UI/Button';
 import { Input } from '../../components/UI/Input';
-import { api } from '../../lib/api';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage = () => {
-const redirectByRole = (role: number) => {
-  switch (role) {
-    case 6:
-      navigate('/dashboard/paciente'); // Corregido: antes decía /patient/dashboard
-      break;
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-      navigate('/dashboard/empleado');
-      break;
-    default:
-      navigate('/'); // Redirección segura por defecto
-      break;
-  }
-};
-const [email, setEmail] = useState('');
+  const redirectByRole = (role: number) => {
+    switch (role) {
+      case 6:
+        navigate('/dashboard/paciente');
+        break;
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+        navigate('/dashboard/empleado');
+        break;
+      default:
+        navigate('/');
+        break;
+    }
+  };
+
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -34,25 +34,22 @@ const [email, setEmail] = useState('');
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      // POST /auth/login
-      const response = await api.post('/auth/login', { email, password });
-      //const token = response.data.token || response.data.accessToken; 
-      const userData = response.data.user;
+      // ✅ CORRECCIÓN: Llamar a login con { email, password }
+      const response = await login({ email, password });
       
-      login(userData);
-      console.log("Sesion iniciado retorna> ", userData.roleId)
+      console.log("Sesion iniciado retorna>", response.user.roleId);
       toast.success('Bienvenido de nuevo');
-     
-      redirectByRole(userData.roleId);
+      
+      // ✅ Usar response.user en lugar de userData
+      redirectByRole(response.user.roleId);
+      
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
-
-
-
   };
 
   return (
@@ -90,12 +87,18 @@ const [email, setEmail] = useState('');
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center">
-              <input id="remember-me" type="checkbox" className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
-              <label htmlFor="remember-me" className="ml-2 block text-slate-600">Recordarme</label>
+              <input 
+                id="remember-me" 
+                type="checkbox" 
+                className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" 
+              />
+              <label htmlFor="remember-me" className="ml-2 block text-slate-600">
+                Recordarme
+              </label>
             </div>
-             <Link to="/forgot-password" className="font-medium text-teal-600 hover:text-teal-500">
-                    ¿Olvidaste tu contraseña?
-                </Link>
+            <Link to="/forgot-password" className="font-medium text-teal-600 hover:text-teal-500">
+              ¿Olvidaste tu contraseña?
+            </Link>
           </div>
 
           <Button type="submit" fullWidth disabled={loading}>

@@ -2,15 +2,34 @@ import { Bell, Calendar, X, Inbox, History } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../../../lib/api";
 
-export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedNoti, setSelectedNoti] = useState(null);
-  const [activeTab, setActiveTab] = useState('unread'); // 'unread' o 'read'
+// 1. Definimos la estructura de la notificación para corregir los errores de tipo 'never'
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  entityType: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
-  const markAsRead = async (id) => {
+// 2. Definimos las Props del componente para corregir los errores TS7031
+interface NotificationsProps {
+  notiUnread: Notification[];
+  notiReaded: Notification[];
+  viewNoti: () => void;
+}
+
+export const Notifications = ({ notiUnread, notiReaded, viewNoti }: NotificationsProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Tipamos el estado para que pueda ser una Notificación o null
+  const [selectedNoti, setSelectedNoti] = useState<Notification | null>(null);
+  const [activeTab, setActiveTab] = useState<'unread' | 'read'>('unread');
+
+  // Tipamos el parámetro 'id' como number
+  const markAsRead = async (id: number) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      viewNoti(); // Refresca los datos en el padre
+      viewNoti(); 
     } catch (error) {
       console.error("Error al marcar como leída:", error);
     }
@@ -19,13 +38,14 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
   const markAllAsRead = async () => {
     try {
       await api.patch(`/notifications/read-all`);
-      viewNoti(); // Refresca los datos en el padre
+      viewNoti(); 
     } catch (error) {
       console.error("Error al marcar todas como leídas:", error);
     }
   };
 
-  const handleOpenModal = (notification) => {
+  // Tipamos el parámetro 'notification'
+  const handleOpenModal = (notification: Notification) => {
     setSelectedNoti(notification);
     setIsModalOpen(true);
     
@@ -39,7 +59,6 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
     setSelectedNoti(null);
   };
 
-  // Determinar qué lista mostrar según la pestaña activa
   const currentNotifications = activeTab === 'unread' ? notiUnread : notiReaded;
 
   return (
@@ -57,7 +76,7 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
                   activeTab === 'unread' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
                 }`}
               >
-                <Inbox size={16} /> No leidas ({notiUnread.length})
+                <Inbox size={16} /> No leídas ({notiUnread.length})
               </button>
               <button 
                 onClick={() => setActiveTab('read')}
@@ -65,7 +84,7 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
                   activeTab === 'read' ? 'border-teal-500 text-teal-600' : 'border-transparent text-slate-400 hover:text-slate-600'
                 }`}
               >
-                <History size={16} /> Leidas ({notiReaded.length})
+                <History size={16} /> Leídas ({notiReaded.length})
               </button>
             </div>
           </div>
@@ -90,7 +109,6 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
                 className="group flex items-center justify-between p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 cursor-pointer transition-all duration-200"
               >
                 <div className="flex items-center gap-4">
-                  {/* Indicador visual de estado */}
                   <div className={`w-2 h-2 rounded-full transition-all ${noti.isRead ? 'bg-slate-200' : 'bg-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.6)]'}`} />
                   
                   <div>
@@ -129,7 +147,7 @@ export const Notifications = ({ notiUnread, notiReaded, viewNoti }) => {
         </div>
       </div>
 
-      {/* MODAL DETALLE (Se mantiene igual, es excelente para ambas vistas) */}
+      {/* MODAL DETALLE */}
       {isModalOpen && selectedNoti && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div 

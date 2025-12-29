@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../../lib/api';
 import { Button } from '../../../../components/UI/Button';
-import { Input } from '../../../../components/UI/Input';
 import { Calendar, Clock, AlertCircle, CheckCircle, XCircle, Plus, FileText, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -31,7 +30,6 @@ export const PatientAppointments = ({ onRequestProfileRedirect }: { onRequestPro
   
   // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<Appointment | null>(null);
 
   // Estados de formularios

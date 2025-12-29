@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 import { 
   TrendingUp, Users, Pill, DollarSign, ClipboardList, 
-  FileText, Calendar, Download, Filter, Activity,
-  AlertCircle, BarChart3, PieChart, CalendarRange
+  FileText, Download, Activity,
+  AlertCircle, BarChart3, 
 } from 'lucide-react';
 import { DateRangePicker } from '../../../../components/UI/DateRangePicker';
 import { api } from '../../../../lib/api';

@@ -1,6 +1,6 @@
 // src/components/ui/DateRangePicker.tsx
 import { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface DateRangePickerProps {
   value: { start: Date; end: Date };

@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 import { Button } from '../../components/UI/Button';
@@ -8,13 +7,15 @@ import { toast } from 'react-toastify';
 import { api } from '../../lib/api';
 
 export const RegisterPage = () => {
-const navigate = useNavigate();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
+  
+  // 1. DESCOMENTADO: Ahora setLoading existe
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +28,7 @@ const navigate = useNavigate();
       return toast.error("Las contraseñas no coinciden");
     }
 
-    setLoading(true);
+    setLoading(true); // Ahora funciona
     try {
       await api.post('/auth/register', {
         username: formData.username,
@@ -39,9 +40,10 @@ const navigate = useNavigate();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error en el registro");
     } finally {
-      setLoading(false);
+      setLoading(false); // Ahora funciona
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
@@ -50,22 +52,53 @@ const navigate = useNavigate();
             <Brain className="h-12 w-12 text-teal-600" />
           </Link>
           <h2 className="text-3xl font-bold text-slate-900">Crear una cuenta</h2>
-          <p className="mt-2 text-slate-600">Únete a PsiFirm hoy mismo</p>
+          <p className="mt-2 text-slate-600">Únete a PsiFirm hoy mismo, luego completa tu perfil una vez hayas creado la cuenta</p>
         </div>
 
         <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          {/* Selector de Rol Simple (Según PDF, ambos pueden registrarse) */}
+          <Input 
+            label="Usuario" 
+            id="username" 
+            type="text" 
+            placeholder="user12" 
+            required 
+            value={formData.username} 
+            onChange={handleChange} 
+          />
 
-             <Input label="Usuario" id="username" type="text" placeholder="user12" required value={formData.username} onChange={handleChange} />
-             
-
-          <Input label="Correo electrónico" id="email" type="email" placeholder="juan@ejemplo.com" required value={formData.email} onChange={handleChange} />
+          <Input 
+            label="Correo electrónico" 
+            id="email" 
+            type="email" 
+            placeholder="juan@ejemplo.com" 
+            required 
+            value={formData.email} 
+            onChange={handleChange} 
+          />
           
-          <Input label="Contraseña" id="password" type="password" placeholder="••••••••" required value={formData.password} onChange={handleChange} />
-          <Input label="Confirmar contraseña" id="confirmPassword" type="password" placeholder="••••••••" required value={formData.confirmPassword} onChange={handleChange} />
+          <Input 
+            label="Contraseña" 
+            id="password" 
+            type="password" 
+            placeholder="••••••••" 
+            required 
+            value={formData.password} 
+            onChange={handleChange} 
+          />
+          
+          <Input 
+            label="Confirmar contraseña" 
+            id="confirmPassword" 
+            type="password" 
+            placeholder="••••••••" 
+            required 
+            value={formData.confirmPassword} 
+            onChange={handleChange} 
+          />
 
-          <Button type="submit" fullWidth>
-            Registrarse
+          {/* 2. AGREGADO: disabled={loading} para evitar múltiples clics */}
+          <Button type="submit" fullWidth disabled={loading}>
+            {loading ? "Registrando..." : "Registrarse"}
           </Button>
 
           <p className="text-center text-sm text-slate-600">
