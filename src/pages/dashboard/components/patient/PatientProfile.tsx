@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../../../../lib/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { Button } from '../../../../components/UI/Button';
 import { Input } from '../../../../components/UI/Input';
 import { 
   User, Phone, HeartPulse, Save, Edit2, 
-  Camera, Lock,AlertTriangle, CheckCircle 
+  Camera, Lock, AlertTriangle, CheckCircle, Loader2 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -17,12 +17,19 @@ interface PatientProfileProps {
 export const PatientProfile = ({ onProfileComplete, initialData }: PatientProfileProps) => {
   const { user } = useAuth();
   
+  // Referencia para el input de archivo oculto
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Estados de Control
   const [isEditing, setIsEditing] = useState(!initialData);
   const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
   const [profileExists, setProfileExists] = useState(!!initialData);
+  
+  // Estado para la imagen de perfil
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Estado del Formulario sincronizado con initialData
+  // Estado del Formulario
   const [formData, setFormData] = useState({
     firstName: initialData?.firstName || '',
     lastName: initialData?.lastName || '',
@@ -48,7 +55,7 @@ export const PatientProfile = ({ onProfileComplete, initialData }: PatientProfil
     confirmPassword: ''
   });
 
-  // Si los datos en el Dashboard cambian, actualizamos el formulario local
+  // Cargar datos iniciales
   useEffect(() => {
     if (initialData) {
       setProfileExists(true);
@@ -58,7 +65,55 @@ export const PatientProfile = ({ onProfileComplete, initialData }: PatientProfil
         birthDate: initialData.birthDate ? new Date(initialData.birthDate).toISOString().split('T')[0] : ''
       }));
     }
+    // Buscar la foto de perfil actual
+    fetchProfileImage();
   }, [initialData]);
+
+  const fetchProfileImage = async () => {
+    try {
+      const res = await api.get('/files/my-files');
+      if (res.data && res.data.profileImage) {
+        setAvatarUrl(res.data.profileImage.fileUrl);
+      }
+    } catch (error) {
+      console.error("Error cargando imagen de perfil", error);
+    }
+  };
+
+  // --- Lógica de subida de imagen ---
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+        toast.error('Por favor selecciona un archivo de imagen válido');
+        return;
+    }
+
+    const formDataImg = new FormData();
+    formDataImg.append('image', file); // El backend espera el campo 'image'
+
+    try {
+        setUploadingImage(true);
+        const res = await api.post('/files/profile-image', formDataImg, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        setAvatarUrl(res.data.fileUrl);
+        toast.success('Foto de perfil actualizada');
+    } catch (error: any) {
+        console.error(error);
+        toast.error('Error al subir la imagen');
+    } finally {
+        setUploadingImage(false);
+    }
+  };
+  // ----------------------------------
 
   const handleInfoChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -115,12 +170,35 @@ export const PatientProfile = ({ onProfileComplete, initialData }: PatientProfil
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Input oculto para la imagen */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleImageUpload} 
+        className="hidden" 
+        accept="image/png, image/jpeg, image/jpg, image/webp"
+      />
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row items-center gap-6">
         <div className="relative group">
-            <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-3xl font-bold border-4 border-white shadow-sm overflow-hidden">
-                {(formData.firstName || user?.username)?.substring(0,2).toUpperCase()}
+            <div className="w-24 h-24 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 text-3xl font-bold border-4 border-white shadow-sm overflow-hidden relative">
+                {uploadingImage ? (
+                    <Loader2 className="animate-spin" />
+                ) : avatarUrl ? (
+                    <img src={avatarUrl} alt="Perfil" className="w-full h-full object-cover" />
+                ) : (
+                    (formData.firstName || user?.username)?.substring(0,2).toUpperCase()
+                )}
             </div>
-            <button className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-teal-600 transition shadow-sm">
+            
+            {/* Botón de cámara */}
+            <button 
+                type="button"
+                onClick={handleCameraClick}
+                disabled={uploadingImage}
+                className="absolute bottom-0 right-0 bg-slate-800 text-white p-2 rounded-full hover:bg-teal-600 transition shadow-sm z-10 cursor-pointer disabled:opacity-50"
+                title="Cambiar foto de perfil"
+            >
                 <Camera size={16} />
             </button>
         </div>

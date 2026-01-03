@@ -23,6 +23,8 @@ export const AdminEmployees = () => {
     try {
       setLoading(true);
       const res = await api.get('/auth/employees'); 
+
+      console.log("Empleados: ", res.data)
       setEmployees(res.data);
     } catch (error) {
       console.error(error);

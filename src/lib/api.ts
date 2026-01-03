@@ -1,18 +1,23 @@
 import axios from 'axios';
 
-const API_URL = 'http://psifirm-alb-1728419943.us-east-2.elb.amazonaws.com/api/v1';
+// ✅ Detecta automáticamente el entorno
+const API_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV 
+    ? 'http://localhost:3000/api/v1' 
+    : 'http://psifirm-alb-1728419943.us-east-2.elb.amazonaws.com/api/v1'
+  );
 
 console.log('🔧 API configurada en:', API_URL);
 
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true, // ✅ Para enviar cookies
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ✅ Interceptor para inyectar el token en cada request
+// ✅ Interceptor para inyectar el token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   

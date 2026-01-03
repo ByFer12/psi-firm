@@ -12,7 +12,8 @@ import {
   Menu, 
   X,
   Search,
-  ListTodo
+  ListTodo,
+  FolderOpen
 } from 'lucide-react';
 import { PatientProfile } from './components/patient/PatientProfile';
 import { Button } from '../../components/UI/Button';
@@ -21,18 +22,19 @@ import { Notifications } from './components/patient/Notification';
 import { PatientInvoices } from './components/patient/PatientInvoices';
 import { PatientHistory } from './components/patient/PatientHistory';
 import { PatientTasks } from './components/patient/PatientTasks';
+import { PatientFiles } from './components/patient/PatientFiles';
 
 export const PatientDashboard = () => {
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'inicio' | 'citas' | 'historial' | 'pagos' | 'perfil' | 'notificaciones'|'tareas'>('inicio');
+  const [activeTab, setActiveTab] = useState<'inicio' | 'citas' | 'historial' | 'pagos' | 'perfil' | 'notificaciones'|'archivos'|'tareas'>('inicio');
   
   // --- Estado Global del Perfil ---
   const [profileData, setProfileData] = useState<any>(null);
   const [noti,setNoti]= useState([]);
   const [notiR,setRNoti]= useState([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
-
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const loadProfile = async () => {
     try {
       setLoadingProfile(true);
@@ -76,12 +78,23 @@ const loadNotificationsLeidas= async()=>{
     loadProfile();
     loadNotifications();
     loadNotificationsLeidas();
+    fetchProfileImage()
   }, []);
-
+  const fetchProfileImage = async () => {
+    try {
+      const res = await api.get('/files/my-files');
+      if (res.data && res.data.profileImage) {
+        setAvatarUrl(res.data.profileImage.fileUrl);
+      }
+    } catch (error) {
+      console.error("Error cargando imagen de perfil", error);
+    }
+  };
   // Menú lateral
   const menuItems = [
     { id: 'inicio', label: 'Inicio', icon: LayoutDashboard },
     { id: 'citas', label: 'Mis Citas', icon: Calendar },
+    { id: 'archivos', label: 'Mis Archivos', icon: FolderOpen },
     { id: 'notificaciones', label: 'Notificaciones', icon: Bell, text:noti.length },
     { id: 'historial', label: 'Historial Clínico', icon: FileText },
     { id: 'pagos', label: 'Pagos y Facturas', icon: CreditCard },
@@ -93,6 +106,10 @@ const loadNotificationsLeidas= async()=>{
     switch(activeTab) {
       case 'citas':
         return <PatientAppointments onRequestProfileRedirect={() => setActiveTab('perfil')} />;
+
+
+      case 'archivos': // <--- NUEVO CASE
+      return <PatientFiles />;
       
       case 'notificaciones':
         return <Notifications
@@ -268,7 +285,12 @@ const loadNotificationsLeidas= async()=>{
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-               {(profileData?.firstName || user?.username)?.substring(0,2).toUpperCase()}
+              {avatarUrl ? (
+                    <img src={avatarUrl} alt="Perfil" className="w-full h-full object-cover" />
+                ) : (
+                    (profileData?.firstName || user?.username)?.substring(0,2).toUpperCase()
+                )}
+               
             </div>
           </div>
         </header>

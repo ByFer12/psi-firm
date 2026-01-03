@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Activity, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, Users, Calendar, ShoppingCart, 
@@ -13,6 +13,7 @@ import { AdminPayroll } from './components/administrative/AdminPayroll';
 import { AdminEmployees } from './components/administrative/AdminEmployees';
 import { AdminReports } from './components/administrative/AdminReports';
 import { api } from '../../lib/api';
+import { AdminClinicalAreas } from './components/administrative/AdminClinicalAreas';
 
 // Interfaz para tipar los datos que vienen de /profile/me
 interface EmployeeProfile {
@@ -54,6 +55,7 @@ export const AdministrativeDashboard = () => {
   const menuItems = [
     { id: 'inicio', label: 'Resumen General', icon: LayoutDashboard },
     { id: 'pacientes', label: 'Gestión Empleados', icon: Users }, 
+    { id: 'areas', label: 'Áreas Clínicas', icon: Activity },
     { id: 'citas', label: 'Control de Citas', icon: Calendar }, 
     { id: 'inventario', label: 'Inventario y Farmacia', icon: ShoppingCart }, 
     { id: 'facturacion', label: 'Caja y Facturación', icon: DollarSign }, 
@@ -76,6 +78,8 @@ export const AdministrativeDashboard = () => {
         return <AdminAppointments />; 
       case 'pacientes':
         return <AdminEmployees />;
+      case 'areas':
+        return <AdminClinicalAreas />;
       case 'inventario':
         return <AdminInventory />;
       case 'facturacion':
