@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../../../lib/api';
 import { 
   Users, CheckCircle, Clock, Plus, Search,
-  ChevronLeft, ChevronRight, FileText 
+  ChevronLeft, ChevronRight, FileText, Download // <--- Importamos Download
 } from 'lucide-react';
 import { Button } from '../../../../components/UI/Button';
 import { toast } from 'react-toastify';
@@ -12,26 +12,29 @@ import { GeneratePayrollModal } from './modals/GeneratePayrollModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// 1. DEFINICIÓN DE INTERFAZ (Esto resuelve el error TS2304)
+// Ajustamos la interfaz para asegurar que tenga todos los campos matemáticos
 interface PayrollRecord {
   id: number;
   period: string;
   baseSalary: string | number;
+  sessionBonus: string | number; // Necesario para el detalle
   totalBonuses: string | number;
   igssDeduction: string | number;
+  otherDeductions: string | number;
   netSalary: string | number;
   statusId: number;
   paidAt?: string;
   employee: {
     firstName: string;
     lastName: string;
+    identification?: string; // Para mostrar DPI en el voucher
+    position?: string;       // Cargo
   };
 }
 
 const ITEMS_PER_PAGE = 7;
 
 export const AdminPayroll = () => {
-  // Ahora TypeScript sabe qué es PayrollRecord
   const [payrolls, setPayrolls] = useState<PayrollRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -54,6 +57,107 @@ export const AdminPayroll = () => {
 
   useEffect(() => { loadData(); }, []);
 
+  // --- FUNCIÓN PARA GENERAR VOUCHER INDIVIDUAL ---
+  const generateIndividualVoucher = (record: PayrollRecord) => {
+    const doc = new jsPDF();
+    
+    // Configuración de Colores y Fuentes
+   // const tealColor = [13, 148, 136]; // Color corporativo (Teal-600)
+   // const grayColor = [100, 116, 139];
+
+    // --- ENCABEZADO ---
+    doc.setFillColor(13, 148, 136); // Teal header
+    doc.rect(0, 0, 210, 30, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PsiFirm', 15, 18);
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Comprobante de Pago de Nómina', 15, 25);
+
+    doc.setFontSize(10);
+    doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString()}`, 195, 25, { align: 'right' });
+
+    // --- DATOS DEL EMPLEADO ---
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Información del Colaborador:', 15, 45);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(50, 50, 50);
+    
+    // Datos izquierdo
+    doc.text(`Nombre: ${record.employee.firstName} ${record.employee.lastName}`, 15, 52);
+    doc.text(`Identificación: ${record.employee.identification || 'N/A'}`, 15, 58);
+    
+    // Datos derecho
+    doc.text(`Periodo Liquidado: ${record.period}`, 120, 52);
+    doc.text(`Fecha de Pago: ${record.paidAt ? new Date(record.paidAt).toLocaleDateString() : 'N/A'}`, 120, 58);
+
+    // --- CÁLCULOS PARA DESGLOSE ---
+    const base = Number(record.baseSalary);
+    const totalBonos = Number(record.totalBonuses);
+    const bonoDecreto = 250.00; // Constante de ley
+    const bonoSesiones = Number(record.sessionBonus);
+    
+    // El "Otro" es lo que resta (Incentivos manuales, aguinaldo, etc)
+    const otrosBonos = totalBonos - bonoDecreto - bonoSesiones; 
+    
+    const igss = Number(record.igssDeduction);
+    const otrasDed = Number(record.otherDeductions);
+    const neto = Number(record.netSalary);
+
+    // --- TABLA DE DETALLES ---
+    autoTable(doc, {
+      startY: 70,
+      head: [['Concepto', 'Ingresos (+)', 'Descuentos (-)']],
+      body: [
+        ['Salario Base Ordinario', `Q. ${base.toFixed(2)}`, ''],
+        ['Bonificación Incentivo (Ley)', `Q. ${bonoDecreto.toFixed(2)}`, ''],
+        ['Bonificación por Productividad', `Q. ${bonoSesiones.toFixed(2)}`, ''],
+        [otrosBonos > 0 ? 'Otros Incentivos / Ajustes' : '', otrosBonos > 0 ? `Q. ${otrosBonos.toFixed(2)}` : '', ''],
+        ['IGSS (4.83%)', '', `Q. ${igss.toFixed(2)}`],
+        [otrasDed > 0 ? 'Otras Deducciones' : '', '', otrasDed > 0 ? `Q. ${otrasDed.toFixed(2)}` : ''],
+        // Fila vacía para separar
+        ['', '', ''], 
+        [{ content: 'TOTAL A RECIBIR', styles: { fontStyle: 'bold', fillColor: [240, 253, 250] } }, 
+         { content: `Q. ${neto.toFixed(2)}`, styles: { fontStyle: 'bold', textColor: [13, 148, 136], fillColor: [240, 253, 250] } }, 
+         { content: '', styles: { fillColor: [240, 253, 250] } }]
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [55, 65, 81], textColor: 255 }, // Dark Gray Header
+      columnStyles: {
+        0: { cellWidth: 90 },
+        1: { cellWidth: 50, halign: 'right' },
+        2: { cellWidth: 50, halign: 'right' },
+      },
+    });
+
+    // --- PIE DE PÁGINA / FIRMAS ---
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    
+    doc.setLineWidth(0.5);
+    doc.line(30, finalY + 40, 90, finalY + 40); // Firma Empleador
+    doc.line(120, finalY + 40, 180, finalY + 40); // Firma Empleado
+
+    doc.setFontSize(9);
+    doc.text('Firma Autorizada PsiFirm', 40, finalY + 45);
+    doc.text('Recibí Conforme', 135, finalY + 45);
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Este documento es un comprobante interno de pago generado por el sistema PsiFirm.', 105, 280, { align: 'center' });
+
+    // Descargar
+    doc.save(`Voucher_${record.employee.lastName}_${record.period}.pdf`);
+    toast.success("Voucher descargado correctamente");
+  };
+
   const processedList = useMemo(() => {
     let result = payrolls.filter(p => 
       `${p.employee.firstName} ${p.employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
@@ -72,16 +176,10 @@ export const AdminPayroll = () => {
 
   useEffect(() => { setCurrentPage(1); }, [searchTerm, sortOrder]);
 
+  // Exportar reporte general (TABLA COMPLETA)
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
-    doc.setFontSize(18);
     doc.text('Reporte General de Nómina', 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, 14, 28);
-
-    const tableColumn = ["Empleado", "Periodo", "Base", "Bonos", "IGSS", "Neto", "Estado"];
-    
     const tableRows = processedList.map(p => [
       `${p.employee.firstName} ${p.employee.lastName}`,
       p.period,
@@ -91,22 +189,16 @@ export const AdminPayroll = () => {
       `Q${Number(p.netSalary).toFixed(2)}`,
       p.statusId === 3 ? 'PAGADO' : 'PENDIENTE'
     ]);
-
     autoTable(doc, {
-      head: [tableColumn],
+      head: [["Empleado", "Periodo", "Base", "Bonos", "IGSS", "Neto", "Estado"]],
       body: tableRows,
-      startY: 35,
-      theme: 'grid',
-      headStyles: { fillColor: [45, 160, 145] },
-      styles: { fontSize: 8 },
+      startY: 30,
     });
-
-    doc.save(`Nomina_${new Date().toISOString().slice(0,10)}.pdf`);
-    toast.success("Documento PDF generado");
+    doc.save(`Reporte_Nomina_${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   const handlePay = async (id: number) => {
-    if (!confirm("¿Confirmar pago?")) return;
+    if (!confirm("¿Confirmar pago y cerrar nómina para este empleado?")) return;
     try {
       await api.patch(`/payroll/${id}/pay`);
       toast.success("Pago registrado");
@@ -120,12 +212,14 @@ export const AdminPayroll = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard icon={Clock} color="orange" label="Nómina Pendiente" value={`Q. ${totalPending.toLocaleString()}`} />
         <StatCard icon={CheckCircle} color="green" label="Total Pagado" value={`Q. ${totalPaid.toLocaleString()}`} />
         <StatCard icon={Users} color="blue" label="Empleados" value={new Set(payrolls.map(p => p.employee.firstName)).size} />
       </div>
 
+      {/* Toolbar */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between gap-4">
          <div className="flex flex-1 gap-2">
             <div className="relative flex-1 md:w-80">
@@ -155,7 +249,7 @@ export const AdminPayroll = () => {
                 onClick={exportToPDF}
                 className="flex items-center gap-2 border-red-200 text-red-600 hover:bg-red-50"
             >
-                <FileText size={18}/> Exportar PDF
+                <FileText size={18}/> Reporte General
             </Button>
             <Button onClick={() => setShowModal(true)} className="flex items-center gap-2">
                 <Plus size={18}/> Generar Nómina
@@ -163,6 +257,7 @@ export const AdminPayroll = () => {
          </div>
       </div>
 
+      {/* Tabla */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
            <table className="w-full text-left text-sm">
@@ -170,7 +265,7 @@ export const AdminPayroll = () => {
                <tr>
                  <th className="px-6 py-4">Empleado</th>
                  <th className="px-6 py-4">Periodo</th>
-                 <th className="px-6 py-4 text-right">Salario Base</th>
+                 <th className="px-6 py-4 text-right">Base</th>
                  <th className="px-6 py-4 text-right text-green-600">Bonos</th>
                  <th className="px-6 py-4 text-right text-red-600">IGSS</th>
                  <th className="px-6 py-4 text-right font-bold text-slate-800">Neto</th>
@@ -182,7 +277,7 @@ export const AdminPayroll = () => {
                {loading ? (
                  <tr><td colSpan={8} className="p-8 text-center text-slate-400">Cargando...</td></tr>
                ) : paginatedList.length === 0 ? (
-                 <tr><td colSpan={8} className="p-8 text-center text-slate-400">No hay registros.</td></tr>
+                 <tr><td colSpan={8} className="p-8 text-center text-slate-400">No hay registros de nómina.</td></tr>
                ) : (
                  paginatedList.map((record) => (
                    <tr key={record.id} className="hover:bg-gray-50 transition-colors">
@@ -199,11 +294,22 @@ export const AdminPayroll = () => {
                           {record.statusId === 3 ? 'PAGADO' : 'PENDIENTE'}
                         </span>
                      </td>
-                     <td className="px-6 py-4 text-right">
+                     <td className="px-6 py-4 text-right flex justify-end gap-2 items-center">
                         {record.statusId !== 3 ? (
                           <Button size="sm" onClick={() => handlePay(record.id)}>Pagar</Button>
                         ) : (
-                          <span className="text-[10px] text-slate-400">{record.paidAt ? new Date(record.paidAt).toLocaleDateString() : 'Realizado'}</span>
+                          <>
+                             <span className="text-[10px] text-slate-400 mr-2">
+                                {record.paidAt ? new Date(record.paidAt).toLocaleDateString() : 'Pagado'}
+                             </span>
+                             <button 
+                                onClick={() => generateIndividualVoucher(record)}
+                                className="p-2 text-teal-600 hover:bg-teal-50 rounded-full transition-colors"
+                                title="Descargar Voucher"
+                             >
+                                <Download size={18} />
+                             </button>
+                          </>
                         )}
                      </td>
                    </tr>
@@ -213,6 +319,7 @@ export const AdminPayroll = () => {
            </table>
         </div>
 
+        {/* Paginación */}
         {!loading && processedList.length > 0 && (
           <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center">
             <span className="text-xs text-slate-500">Mostrando {paginatedList.length} de {processedList.length}</span>
@@ -234,7 +341,7 @@ export const AdminPayroll = () => {
   );
 };
 
-// Se agregó el tipo :any para evitar errores de parámetro implícito
+// Componente simple de Tarjetas
 const StatCard = ({ icon: Icon, color, label, value }: any) => {
     const colors: any = { 
         orange: 'bg-orange-100 text-orange-600', 

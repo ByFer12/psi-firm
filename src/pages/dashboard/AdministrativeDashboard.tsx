@@ -1,8 +1,9 @@
-import { Activity, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { 
   LayoutDashboard, Users, Calendar, ShoppingCart, 
-  DollarSign, FileText, ClipboardList, LogOut, Menu, X, Bell 
+  DollarSign, FileText, ClipboardList, LogOut, Menu, X, Bell, 
+  ActivityIcon
 } from 'lucide-react';
 
 // IMPORTACIÓN DE COMPONENTES
@@ -55,7 +56,7 @@ export const AdministrativeDashboard = () => {
   const menuItems = [
     { id: 'inicio', label: 'Resumen General', icon: LayoutDashboard },
     { id: 'pacientes', label: 'Gestión Empleados', icon: Users }, 
-    { id: 'areas', label: 'Áreas Clínicas', icon: Activity },
+    { id: 'areas', label: 'Áreas Clínicas', icon: ActivityIcon },
     { id: 'citas', label: 'Control de Citas', icon: Calendar }, 
     { id: 'inventario', label: 'Inventario y Farmacia', icon: ShoppingCart }, 
     { id: 'facturacion', label: 'Caja y Facturación', icon: DollarSign }, 

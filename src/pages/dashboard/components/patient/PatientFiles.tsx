@@ -4,7 +4,7 @@ import { Button } from '../../../../components/UI/Button';
 import { Input } from '../../../../components/UI/Input';
 import { 
   FileText, Image as ImageIcon, Trash2, Upload, 
-  Eye, Loader2, X, ZoomIn, ZoomOut, RotateCcw, Move 
+  Eye, Loader2, X, ZoomIn, ZoomOut, RotateCcw 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -355,6 +355,7 @@ export const PatientFiles = () => {
               {/* Formulario visible para descripción y botón */}
               <div className="z-10 w-full max-w-md flex flex-col md:flex-row gap-2 mt-2" onClick={e => e.stopPropagation()}>
                  <Input 
+                    label="Descripción"
                     placeholder="Descripción (ej. Receta 2024)" 
                     value={docDescription} 
                     onChange={(e) => setDocDescription(e.target.value)}

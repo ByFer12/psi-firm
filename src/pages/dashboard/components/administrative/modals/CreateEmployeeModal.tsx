@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../../../../lib/api';
-import { X, User, Shield, Briefcase, Stethoscope, Mail, Info, Activity } from 'lucide-react';
+import { X, User, Shield, Stethoscope, Mail, Activity } from 'lucide-react';
 import { Button } from '../../../../../components/UI/Button';
 import { toast } from 'react-toastify';
 
@@ -30,14 +30,20 @@ export const CreateEmployeeModal = ({ onClose, onSuccess, employeeData }: Props)
 
     useEffect(() => {
         const initData = async () => {
+
+            console.log("Datos de empleadoooo: ",employeeData);
             try {
                 // Cargar catálogos
                 const [specRes, areaRes] = await Promise.all([
                     api.get('/specialties/'),
                     api.get('/clinical-areas?active=true') 
                 ]);
+
+
                 setSpecialties(specRes.data);
                 setActiveAreas(areaRes.data);
+
+                console.log("Clinica datooooooossss: ",employeeData)
             } catch (err) { console.error("Error cargando catálogos", err); }
 
             // Lógica de carga para EDICIÓN
@@ -70,9 +76,9 @@ export const CreateEmployeeModal = ({ onClose, onSuccess, employeeData }: Props)
 
                     // DATOS CLÍNICOS
                     professionalLicense: clinical.professionalLicense || '',
-                    specialtyId: clinical.specialtyId || '',
+                    specialtyId: clinical.specialty?.id || '',
                     sessionRate: clinical.sessionRate || '',
-                    areaId: clinical.areaId || '' // Cargar el ID del área única
+                    areaId: clinical.area?.id || '' // Cargar el ID del área única
                 }));
             }
         };

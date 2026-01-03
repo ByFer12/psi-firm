@@ -35,7 +35,7 @@ export const AdminClinicalAreas = () => {
     loadAreas();
   }, []);
 
-  const handleToggleStatus = async (id: number, currentStatus: string) => {
+  const handleToggleStatus = async (id: number) => {
     try {
         await api.patch(`/clinical-areas/${id}/status`);
         toast.success("Estado actualizado");
@@ -138,7 +138,7 @@ export const AdminClinicalAreas = () => {
                                             <Edit2 size={18}/>
                                         </button>
                                         <button 
-                                            onClick={() => handleToggleStatus(area.id, area.status)}
+                                            onClick={() => handleToggleStatus(area.id)}
                                             className={`p-1 transition ${area.status === 'ACTIVE' ? 'text-slate-400 hover:text-red-500' : 'text-green-500 hover:text-green-700'}`}
                                             title={area.status === 'ACTIVE' ? 'Desactivar' : 'Activar'}
                                         >

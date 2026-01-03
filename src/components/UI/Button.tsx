@@ -9,7 +9,7 @@ function cn(...inputs: ClassValue[]) {
 
 // 1. Expandimos la interfaz para aceptar 'ghost' y 'size'
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'; // Agregado 'ghost'
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'|'danger'; // Agregado 'ghost'
   size?: 'sm' | 'md' | 'lg'; // Agregado 'size'
   fullWidth?: boolean;
   isActive?: boolean; 
@@ -30,7 +30,8 @@ export const Button: React.FC<ButtonProps> = ({
     primary: "bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm",
     secondary: "bg-slate-800 text-white hover:bg-slate-900 focus:ring-slate-500 shadow-sm",
     outline: "border border-slate-300 bg-transparent hover:bg-slate-50 text-slate-700",
-    ghost: "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-teal-600" // Estilo para 'ghost'
+    ghost: "bg-transparent hover:bg-slate-100 text-slate-600 hover:text-teal-600",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm" 
   };
 
   const sizes = {

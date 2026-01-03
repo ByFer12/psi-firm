@@ -13,6 +13,7 @@ interface Props {
 export const CreateAreaModal = ({ onClose, onSuccess, areaData }: Props) => {
     const [loading, setLoading] = useState(false);
     const isEdit = !!areaData;
+    console.log("Areaaa dataaaa: ", areaData)
 
     const [formData, setFormData] = useState({
         name: '', 
