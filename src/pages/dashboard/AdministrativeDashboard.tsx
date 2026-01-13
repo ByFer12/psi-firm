@@ -4,13 +4,22 @@ import {
   LayoutDashboard, Users, Calendar, ShoppingCart, 
   DollarSign, FileText, ClipboardList, LogOut, Menu, X, Bell 
 } from 'lucide-react';
-import { AdminAppointments } from './components/administrative/AdminAppointments';
 
-// Componentes Placeholder para lo que aún no está en backend
+// IMPORTAR TUS NUEVOS COMPONENTES
+import { AdminAppointments } from './components/administrative/AdminAppointments';
+import { AdminReports } from './components/administrative/AdminReports';
+import { AdminInventory } from './components/administrative/AdminInventory'; // <--- NUEVO
+import { AdminBilling } from './components/administrative/AdminBilling';       // <--- NUEVO
+import { AdminPayroll } from './components/administrative/AdminPayroll';       // <--- NUEVO
+
+// Componente Placeholder (Solo queda para Pacientes por ahora)
 const PlaceholderModule = ({ title }: { title: string }) => (
-  <div className="p-10 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+  <div className="p-10 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex flex-col items-center justify-center min-h-[400px]">
+    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+        <Users className="text-gray-400" size={32} />
+    </div>
     <h2 className="text-xl font-bold text-slate-400">{title}</h2>
-    <p className="text-slate-500">Módulo en desarrollo (Funcionalidad Visual)</p>
+    <p className="text-slate-500 mt-2 max-w-md">Este módulo está en desarrollo. Pronto podrás gestionar admisiones aquí.</p>
   </div>
 );
 
@@ -21,50 +30,63 @@ export const AdministrativeDashboard = () => {
 
   const menuItems = [
     { id: 'inicio', label: 'Resumen General', icon: LayoutDashboard },
-    { id: 'pacientes', label: 'Gestión Pacientes', icon: Users }, // Admisión
-    { id: 'citas', label: 'Control de Citas', icon: Calendar }, // Asignación y Agenda
-    { id: 'inventario', label: 'Inventario y Farmacia', icon: ShoppingCart }, // Stock
-    { id: 'facturacion', label: 'Caja y Facturación', icon: DollarSign }, // Pagos
-    { id: 'nomina', label: 'Recursos Humanos', icon: ClipboardList }, // Nómina
-    { id: 'reportes', label: 'Reportes y Auditoría', icon: FileText }, // CIE-11, Caja
+    { id: 'pacientes', label: 'Gestión Pacientes', icon: Users }, 
+    { id: 'citas', label: 'Control de Citas', icon: Calendar }, 
+    { id: 'inventario', label: 'Inventario y Farmacia', icon: ShoppingCart }, 
+    { id: 'facturacion', label: 'Caja y Facturación', icon: DollarSign }, 
+    { id: 'nomina', label: 'Recursos Humanos', icon: ClipboardList }, 
+    { id: 'reportes', label: 'Reportes y Auditoría', icon: FileText }, 
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'citas':
-        return <AdminAppointments />; // ¡Conectado al Backend!
+        return <AdminAppointments />; 
       case 'pacientes':
         return <PlaceholderModule title="Módulo de Admisión de Pacientes" />;
+      
+      // --- CONECTAMOS LOS NUEVOS MÓDULOS ---
       case 'inventario':
-        return <PlaceholderModule title="Gestión de Inventario y Medicamentos" />;
+        return <AdminInventory />;
       case 'facturacion':
-        return <PlaceholderModule title="Facturación Electrónica y Pagos" />;
+        return <AdminBilling />;
       case 'nomina':
-        return <PlaceholderModule title="Gestión de Nómina y Planillas" />;
+        return <AdminPayroll />;
+      
       case 'reportes':
-        return <PlaceholderModule title="Reportes Gerenciales" />;
+        return <AdminReports />;
+      
       case 'inicio':
       default:
         return (
-            <div className="space-y-6">
-                <h1 className="text-2xl font-bold text-slate-800">Panel Administrativo</h1>
-                {/* Stats Cards (Quemadas por ahora) */}
+            <div className="space-y-6 animate-fade-in">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-800">Hola, {user?.username} 👋</h1>
+                        <p className="text-slate-500">Aquí tienes el resumen de hoy.</p>
+                    </div>
+                    <div className="text-sm text-slate-400 bg-white px-4 py-2 rounded-lg border border-gray-200">
+                        {new Date().toLocaleDateString('es-GT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </div>
+                </div>
+
+                {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-teal-500">
-                        <span className="text-slate-500 text-sm">Citas Pendientes</span>
-                        <p className="text-2xl font-bold text-slate-800 mt-1">12</p>
+                        <span className="text-slate-500 text-sm font-medium">Citas Pendientes</span>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">12</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-blue-500">
-                        <span className="text-slate-500 text-sm">Pacientes Nuevos</span>
-                        <p className="text-2xl font-bold text-slate-800 mt-1">5</p>
+                        <span className="text-slate-500 text-sm font-medium">Pacientes Nuevos</span>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">5</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-orange-500">
-                        <span className="text-slate-500 text-sm">Caja del Día</span>
-                        <p className="text-2xl font-bold text-slate-800 mt-1">Q. 2,450.00</p>
+                        <span className="text-slate-500 text-sm font-medium">Caja del Día</span>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">Q. 2,450</p>
                     </div>
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-red-500">
-                        <span className="text-slate-500 text-sm">Stock Bajo</span>
-                        <p className="text-2xl font-bold text-slate-800 mt-1">3 Ítems</p>
+                        <span className="text-slate-500 text-sm font-medium">Alertas Stock</span>
+                        <p className="text-3xl font-bold text-slate-800 mt-2">3</p>
                     </div>
                 </div>
             </div>
@@ -72,12 +94,16 @@ export const AdministrativeDashboard = () => {
     }
   };
 
+  // ... (El resto del return con Sidebar y Header se mantiene IGUAL que tu código original)
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-gray-50 flex font-sans">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 shadow-xl`}>
         <div className="flex items-center justify-between p-4 h-16 border-b border-slate-800">
-            <span className="font-bold text-xl tracking-wider">PsiFirm <span className="text-teal-400">Admin</span></span>
+            <span className="font-bold text-xl tracking-wider flex items-center gap-2">
+                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-bold">P</div>
+                PsiFirm
+            </span>
             <button onClick={() => setSidebarOpen(false)} className="md:hidden text-slate-400 hover:text-white"><X /></button>
         </div>
         <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
@@ -85,8 +111,8 @@ export const AdministrativeDashboard = () => {
                 <button
                     key={item.id}
                     onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                        activeTab === item.id ? 'bg-teal-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        activeTab === item.id ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                     }`}
                 >
                     <item.icon size={18} />
@@ -95,7 +121,7 @@ export const AdministrativeDashboard = () => {
             ))}
         </nav>
         <div className="absolute bottom-0 w-full p-4 border-t border-slate-800 bg-slate-900">
-            <button onClick={logout} className="flex items-center gap-3 text-red-400 hover:text-red-300 text-sm font-medium w-full">
+            <button onClick={logout} className="flex items-center gap-3 text-red-400 hover:text-red-300 hover:bg-red-900/20 px-4 py-3 rounded-lg text-sm font-medium w-full transition-colors">
                 <LogOut size={18} /> Cerrar Sesión
             </button>
         </div>
@@ -104,22 +130,26 @@ export const AdministrativeDashboard = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
+        <header className="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 shadow-sm">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden text-slate-500"><Menu /></button>
             <div className="flex items-center gap-4 ml-auto">
-                <button className="relative p-2 text-slate-500 hover:bg-gray-100 rounded-full">
+                <button className="relative p-2 text-slate-500 hover:bg-gray-100 rounded-full transition-colors">
                     <Bell size={20} />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
                 </button>
+                <div className="h-8 w-px bg-gray-200 mx-2"></div>
                 <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold text-slate-800">{user?.username}</p>
-                    <p className="text-xs text-slate-500">Administrativo</p>
+                    <p className="text-sm font-bold text-slate-800">{user?.username || 'Usuario'}</p>
+                    <p className="text-xs text-slate-500 font-medium">Administrador</p>
+                </div>
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">
+                    {user?.username?.charAt(0).toUpperCase() || 'A'}
                 </div>
             </div>
         </header>
 
         {/* Dynamic Body */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gray-50">
             {renderContent()}
         </main>
       </div>

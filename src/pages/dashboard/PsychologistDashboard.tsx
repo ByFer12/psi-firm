@@ -42,6 +42,7 @@ export const PsychologistDashboard = () => {
   const [busyHours, setBusyHours] = useState<number[]>([]); 
   const [userr,setUserr]= useState({});
   const [actives,setActives]= useState(Number);
+  const [citesClosed, setCitesClosed]= useState([]);
 
   // Estado para auto-iniciar sesión (cuando vienes de apertura)
   const [autoStartSessionAppt, setAutoStartSessionAppt] = useState<any>(null);
@@ -52,9 +53,14 @@ const [patientsList, setPatientsList] = useState<any[]>([]);
     profile();
     loadMyPatients()
     activos()
+    citesCloseClinicalRecord();
   }, []);
 
-
+const citesCloseClinicalRecord=async()=>{
+  const res = await api.get("/citas/close");
+  setCitesClosed(res.data)
+  console.log("Nuevaaaaaaaaas citaaaaaaaaaas", res.data);
+}
 
     const loadMyPatients = async () => {
     try {
@@ -193,6 +199,8 @@ const [patientsList, setPatientsList] = useState<any[]>([]);
       setRescheduleForm({ date: '', time: '' });
   };
 
+  
+
   // Filtrado de citas para la tabla (Solo pendientes o confirmadas)
   const filteredAppointments = appointments.filter((app: any) => 
        (app.statusId === 1 || app.statusId === 2) &&
@@ -294,10 +302,10 @@ const [patientsList, setPatientsList] = useState<any[]>([]);
                      <tbody className="divide-y divide-gray-100">
                        {loading ? (
                            <tr><td colSpan={5} className="p-10 text-center text-slate-500">Cargando datos...</td></tr>
-                       ) : filteredAppointments.length === 0 ? (
+                       ) : citesClosed.length === 0 ? (
                            <tr><td colSpan={5} className="p-10 text-center text-slate-400">No se encontraron citas pendientes.</td></tr>
                        ) : (
-                           filteredAppointments.map((app: any) => (
+                           citesClosed.map((app: any) => (
                              <tr key={app.id} className="hover:bg-slate-50 transition-colors">
                                <td className="p-4">
                                  <div className="font-medium flex items-center gap-2">
@@ -314,7 +322,7 @@ const [patientsList, setPatientsList] = useState<any[]>([]);
                                </td>
                                <td className="p-4">
                                  <span className="inline-block px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                                     {app.patient?.consultationReason || "General"}
+                                     {app.notes || "General"}
                                  </span>
                                </td>
                                <td className="p-4 text-center">

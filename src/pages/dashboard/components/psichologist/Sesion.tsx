@@ -3,9 +3,11 @@ import { api } from '../../../../lib/api';
 import { Button } from '../../../../components/UI/Button';
 import { 
   Calendar, Clock, User, Save, ClipboardList, Play, 
-  CalendarDays, Pill, Plus, Trash2, Search, AlertCircle, CheckCircle2, XCircle
+  CalendarDays, Pill, Plus, Trash2, Search, AlertCircle, CheckCircle2, XCircle,
+  FileText
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { PaymentOrderModal } from './PaymentOrderModal';
 
 interface Appointment {
   appointmentId: number;
@@ -90,6 +92,11 @@ export const Sesion = ({ onNavigateToOpening, initialAppointment }: { onNavigate
   const [reprogramAppt, setReprogramAppt] = useState<Appointment | null>(null);
   const [reprogramForm, setReprogramForm] = useState({ date: '', time: '' });
   const [reprogramBusyHours, setReprogramBusyHours] = useState<number[]>([]);
+
+  // --- ESTADO PARA ORDEN DE PAGO ---
+const [paymentOrder, setPaymentOrder] = useState<any>(null);
+const [showPaymentOrder, setShowPaymentOrder] = useState(false);
+
 
   useEffect(() => {
     loadAppointments();
@@ -299,7 +306,10 @@ export const Sesion = ({ onNavigateToOpening, initialAppointment }: { onNavigate
             // Receta Médica
             prescriptionItems: prescriptionItems
         };
-        
+            console.log("DATOS A ENVIAR:", {
+        citaID: currentAppointment.appointmentId, // ¿Esto imprime un número?
+        asistio: formData.attended
+    });
         await api.post('/sessions', payload);
         toast.success("Sesión, receta y próxima cita registradas.");
         
@@ -314,6 +324,45 @@ export const Sesion = ({ onNavigateToOpening, initialAppointment }: { onNavigate
     }
   };
 
+
+  // --- GUARDAR SESIÓN CON ORDEN DE PAGO ---
+const handleSubmitWithPaymentOrder = async () => {
+    if (!clinicalRecordId || !currentAppointment) return;
+    
+    if (formData.attended && (!formData.topicsDiscussed || !formData.interventions)) {
+        return toast.error("Complete los campos clínicos (SOAP) si asistió.");
+    }
+
+    setLoading(true);
+    try {
+        const payload = {
+            clinicalRecordId: clinicalRecordId,
+            appointmentId: currentAppointment.appointmentId,
+            psychologistId: currentAppointment.psychologistId || 1,
+            attended: formData.attended,
+            absenceReason: formData.attended ? null : formData.absenceReason,
+            topicsDiscussed: formData.topicsDiscussed,
+            interventions: formData.interventions,
+            patientResponse: formData.patientResponse,
+            observations: formData.observations,
+            nextSessionDate: formData.nextSessionDate || null,
+            nextSessionTime: formData.nextSessionTime || null,
+            tasks: formData.tasks,
+            prescriptionItems: prescriptionItems
+        };
+
+        const response = await api.post('/sessions/with-payment-order', payload);
+        console.log("Precio: ",response.data.paymentOrder)
+        setPaymentOrder(response.data.paymentOrder);
+        setShowPaymentOrder(true);
+        toast.success("Sesión registrada. Orden de pago generada.");
+
+    } catch (error: any) {
+        toast.error(error.response?.data?.message || "Error al guardar");
+    } finally {
+        setLoading(false);
+    }
+};
   // --- VISTA FORMULARIO ---
   if (view === 'form' && currentAppointment) {
     return (
@@ -497,15 +546,37 @@ export const Sesion = ({ onNavigateToOpening, initialAppointment }: { onNavigate
              </div>
 
              {/* Footer Botón Guardar */}
-             <div className="flex justify-end pt-4 border-t">
-                 <Button 
+            <div className="flex justify-end gap-4 pt-4 border-t">
+                <Button 
                     onClick={handleSubmit} 
+                    disabled={loading}
+                    variant="outline"
+                    className="px-8"
+                >
+                    <Save className="mr-2" size={18}/> Solo Guardar
+                </Button>
+                
+                <Button 
+                    onClick={handleSubmitWithPaymentOrder} 
                     disabled={loading} 
-                    className="px-8 bg-slate-900 hover:bg-slate-800 text-white shadow-lg transform hover:-translate-y-0.5 transition-all"
-                 >
-                    <Save className="mr-2" size={18}/> Finalizar Sesión
-                 </Button>
-             </div>
+                    className="px-8 bg-teal-600 hover:bg-teal-700 text-white shadow-lg"
+                >
+                    <FileText className="mr-2" size={18}/> Generar Orden de Pago
+                </Button>
+            </div>
+
+            {/* MODAL ORDEN DE PAGO */}
+{showPaymentOrder && paymentOrder && (
+    <PaymentOrderModal 
+        paymentOrder={paymentOrder} 
+        onClose={() => {
+            setShowPaymentOrder(false);
+            setView('agenda');
+            setCurrentAppointment(null);
+            loadAppointments();
+        }}
+    />
+)}
         </div>
     );
   }

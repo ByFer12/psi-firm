@@ -80,9 +80,9 @@ export const AdminAppointments = () => {
     setLoading(true);
     try {
       const resAppts = await api.get('/citas');
-      setAppointments(resAppts.data);
+     setAppointments(resAppts.data);
       const resPsychs = await api.get('/clinical/psychologists'); 
-      setPsychologists(resPsychs.data);
+  setPsychologists(resPsychs.data);
     } catch (error) {
       toast.error("Error cargando datos");
     } finally {
